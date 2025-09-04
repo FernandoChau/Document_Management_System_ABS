@@ -60,18 +60,27 @@ class FolderController extends Controller
     public function show($id)
     {
         $folder = Folder::findOrFail($id);
+        if ($folder->is_accessible == false) {
+            return redirect()->back()->with('error', 'A pasta não é acessível.');
+        }
         return view('folders.show', compact('folder'));
     }
 
     public function edit($id)
     {
         $folder = Folder::findOrFail($id);
+        if ($folder->is_accessible == false) {
+            return redirect()->back()->with('error', 'A pasta não é acessível.');
+        }
         return view('folders.edit', compact('folder'));
     }
 
     public function update(Request $request, $id)
     {
         $folder = Folder::findOrFail($id);
+        if ($folder->is_accessible == false) {
+            return redirect()->back()->with('error', 'A pasta não é acessível.');
+        }
         //validate
         $request->validate([
             'name' => 'required|string|max:255|',
@@ -95,7 +104,7 @@ class FolderController extends Controller
             'name' => $request->name,
             'parent_id' => $request->parent_id,
             'tag' => $request->tag,
-            'created_by' => auth()->id(),
+            'updated_by' => auth()->id(),
             'is_accessible' => $request->is_accessible ? true : false,
             'is_removable' => $request->is_removable ? true : false,
         ]);
@@ -143,6 +152,9 @@ class FolderController extends Controller
     public function destroy($id)
     {
         $folder = Folder::findOrFail($id);
+        if ($folder->is_accessible == false) {
+            return redirect()->back()->with('error', 'A pasta não é acessível.');
+        }
         $folder->delete();
         return redirect()->back()->with('success', 'Pasta excluída com sucesso.');
     }

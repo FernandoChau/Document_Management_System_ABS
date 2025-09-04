@@ -31,7 +31,11 @@ Route::middleware([
 
 Route::get('/dashboard/{id}', function ($id) {
     //order folders and files by name
+    if (Folder::findOrFail($id)->is_accessible == false)
+        return redirect()->back()->with('error', 'A pasta não é acessível.');
+    
     $folders = Folder::where('parent_id', $id)->get()->sortBy('name');
+    
     $files = File::where('folder_id', $id)->get()->sortBy('name');
     $parentId = $id;
 

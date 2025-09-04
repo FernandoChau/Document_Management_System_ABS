@@ -22,8 +22,8 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', function () {
-        $folders = Folder::get();
-        $files = File::all();
+        $folders = Folder::get()->sortBy('name');
+        $files = File::get()->sortBy('name');
         $parentId = null;
         return view('abs_dms/documents/index', compact('folders', 'files', 'parentId'));
     })->name('dashboard');

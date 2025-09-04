@@ -64,49 +64,21 @@ class FileController extends Controller
                 $file->path = 'uploads/' . $fileName;
                 $file->tag = $request->tag ? $request->tag : "Optional";
                 $file->folder_id = $request->folder_id;
+
                 $file->created_by = auth()->user()->id;
+                $file->updated_by = null;
+                $file->deleted_by = null;
+                
                 $file->is_accessible = true;
                 $file->is_removable = true;
-                $file->is_removed = false;
+                $file->is_editable = true;
                 $file->is_public = false;
+                
                 $file->save();
             }
         }
 
         return redirect()->back()->with('success', 'Ficheiros criados com sucesso.');
-        // Validate and create the file
-        // $request->validate([
-        //     'name' => 'required|string|max:255',
-        //     'folder_id' => 'nullable|uuid',
-        //     'tag' => 'in:Important,Relevant,Optional',
-        //     'created_by' => 'required',
-        //     'is_accessible' => 'boolean',
-        //     'is_removable' => 'boolean',
-        // ],[
-        //     'name.required' => 'O campo nome não pode ser nulo',
-        //     'name.string' => 'O nome do arquivo deve ser uma string',
-        //     'name.max' => 'O nome do arquivo não pode ter mais de 255 caracteres',
-        //     'folder_id.uuid' => 'Selecione um diretório válido',
-        //     'tag.in' => 'A tag do arquivo deve ser uma das seguintes: Importante, Relevante, Opcional',
-        //     'created_by.required' => 'O ID do criador é obrigatório',
-        //     'is_accessible.boolean' => 'O campo de acessibilidade deve ser verdadeiro ou falso',
-        //     'is_removable.boolean' => 'O campo de remoção deve ser verdadeiro ou falso',
-        // ]);
-
-        // $file = File::create([
-        //     'name' => $request->name,
-        //     'folder_id' => $request->folder_id,
-        //     'tag' => $request->tag,
-        //     'created_by' => $request->created_by,
-        //     'is_accessible' => $request->is_accessible ?? true,
-        //     'is_removable' => $request->is_removable ?? true,
-        // ]);
-
-        // if (!$file) {
-        //     return redirect()->route('files.index')->with('error', 'Falha ao criar arquivo.');
-        // }
-
-        // return redirect()->route('files.index')->with('success', 'Arquivo criado com sucesso.');
     }
 
     public function show($id)
@@ -145,6 +117,7 @@ class FileController extends Controller
             'name' => $request->name . "." . $file->extension,
             'folder_id' => $request->folder_id ? $request->folder_id : $file->folder_id,
             'tag' => $request->tag,
+            'updated_by' => auth()->user()->id,
             'is_accessible' => $request->is_accessible ? true : false,
             'is_removable' => $request->is_removable ? true : false,
         ]);
@@ -154,6 +127,15 @@ class FileController extends Controller
         }
 
         return redirect()->back()->with('success', 'Arquivo atualizado com sucesso.');
+    }
+
+    public function disable($id)
+    {
+        $file = File::findOrFail($id);
+        $file->is_accessible = false;
+        $file->deleted_by = auth()->user()->id;
+        $file->save();
+        return redirect()->back()->with('success','Arquivo Removido com sucesso.');
     }
 
     public function destroy($id)

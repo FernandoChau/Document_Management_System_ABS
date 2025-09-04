@@ -20,11 +20,16 @@ return new class extends Migration
             $table->unsignedBigInteger('size')->nullable();
             $table->uuid('folder_id')->nullable();
             $table->enum('tag', ['Important', 'Relevant', 'Optional'])->default('Optional');
-            $table->foreignId('created_by')->nullable();
+            
             $table->boolean('is_accessible')->default(true);
+            $table->boolean('is_editable')->default(true);
             $table->boolean('is_removable')->default(true);
-            $table->boolean('is_removed')->default(false);
             $table->boolean('is_public')->default(false);
+
+            $table->foreignId('created_by')->nullable();
+            $table->foreignId('updated_by')->nullable();
+            $table->foreignId('deleted_by')->nullable();
+            
             $table->timestamp('deleted_at')->nullable();
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
@@ -35,6 +40,16 @@ return new class extends Migration
                 ->onDelete('cascade');
 
             $table->foreign('created_by')
+                ->references('id')
+                ->on('users')
+                ->onDelete('set null');
+
+            $table->foreign('updated_by')
+                ->references('id')
+                ->on('users')
+                ->onDelete('set null');
+
+            $table->foreign('deleted_by')
                 ->references('id')
                 ->on('users')
                 ->onDelete('set null');

@@ -23,6 +23,8 @@ class Folder extends Model
         'tag',
         'link',
         'created_by',
+        'deleted_by',
+        'updated_by',
         'is_accessible',
         'is_removable',
     ];

@@ -66,6 +66,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/{id}/edit', [FolderController::class, 'edit'])->name('folders.edit');
         Route::put('/{id}', [FolderController::class, 'update'])->name('folders.update');
         Route::delete('/{id}', [FolderController::class, 'destroy'])->name('folders.destroy');
+        Route::put('disable/{id}', [FolderController::class, 'disable'])->name('folders.disable');
     });
 
     Route::prefix('files')->group(function () {

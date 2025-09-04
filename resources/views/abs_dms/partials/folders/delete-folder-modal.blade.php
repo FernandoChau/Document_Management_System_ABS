@@ -21,8 +21,8 @@
                 Eliminar Diretório <span class="text-red-500" x-text="deleteFolderData.name"></span>
             </h4>
         </div>
-        <form class="flex flex-col" x-bind:action="'{{ route('folders.destroy', '__ID__') }}'.replace('__ID__', deleteFolderData.id)" method="POST">
-            @method('DELETE')
+        <form class="flex flex-col" x-bind:action="'{{ route('folders.disable', '__ID__') }}'.replace('__ID__', deleteFolderData.id)" method="POST">
+            @method('PUT')
             @csrf
             
             <p class="text-gray-600 dark:text-gray-300">Ao eliminar o diretório <span class="font-semibold text-red-500" x-text="deleteFolderData.name"></span> criado por <span class="font-semibold" x-text="deleteFolderData.createdBy"></span>, os ficheiros e subdiretórios contidos serão todos eliminados também.</p>

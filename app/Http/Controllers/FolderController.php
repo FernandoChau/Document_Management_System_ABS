@@ -44,9 +44,9 @@ class FolderController extends Controller
             'name' => $request->name,
             'parent_id' => $request->parent_id,
             'tag' => 'Optional',
-            'created_by' => auth()->id(),
             'is_accessible' => $request->is_accessible ?? true,
             'is_removable' => $request->is_removable ?? true,
+            'created_by' => auth()->user()->id,
         ]);
 
 
@@ -78,9 +78,7 @@ class FolderController extends Controller
     public function update(Request $request, $id)
     {
         $folder = Folder::findOrFail($id);
-        if ($folder->is_accessible == false) {
-            return redirect()->back()->with('error', 'A pasta não é acessível.');
-        }
+
         //validate
         $request->validate([
             'name' => 'required|string|max:255|',
@@ -104,7 +102,7 @@ class FolderController extends Controller
             'name' => $request->name,
             'parent_id' => $request->parent_id,
             'tag' => $request->tag,
-            'updated_by' => auth()->id(),
+            'updated_by' => auth()->user()->id,
             'is_accessible' => $request->is_accessible ? true : false,
             'is_removable' => $request->is_removable ? true : false,
         ]);
@@ -147,6 +145,15 @@ class FolderController extends Controller
             return redirect()->route('dashboard')->with('error', 'Falha ao atualizar pasta.');
 
         return redirect()->route('dashboard')->with('success', 'Pasta atualizada com sucesso.');
+    }
+
+    public function disable($id)
+    {
+        $folder = Folder::findOrFail($id);
+        $folder->is_accessible = !$folder->is_accessible;
+        $folder->deleted_by = auth()->user()->id;
+        $folder->save();
+        return redirect()->back()->with('success', 'Acessibilidade da pasta alterada com sucesso.');
     }
 
     public function destroy($id)

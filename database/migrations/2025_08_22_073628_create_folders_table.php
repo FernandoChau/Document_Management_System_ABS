@@ -17,6 +17,8 @@ return new class extends Migration {
             $table->uuid('parent_id')->nullable(); // UUID para parent_id
             $table->enum('tag', ['Important', 'Relevant', 'Optional'])->default('Optional');
             $table->foreignId('created_by')->nullable();
+            $table->foreignId('deleted_by')->nullable();
+            $table->foreignId('updated_by')->nullable();
             $table->boolean('is_accessible')->default(true);
             $table->boolean('is_removable')->default(true);
             $table->boolean('is_removed')->default(false);

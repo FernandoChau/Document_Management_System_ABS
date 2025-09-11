@@ -197,7 +197,7 @@
             {{ Str::of(Auth::user()->name)->trim()->explode(' ')->map(fn($part) => $part[0])->take(2)->join('') }}
           </span>
 
-          <span class="text-theme-sm mr-1 block font-medium"> {{Auth::user()->name}} </span>
+          <span class="text-theme-sm mr-1 block font-medium"> {{Str::of(Auth::user()->name)->words(2, '')}} </span>
 
           <svg
             :class="dropdownOpen && 'rotate-180'"

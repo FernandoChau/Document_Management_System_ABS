@@ -390,7 +390,7 @@
                                                     </div>
                                                 </td>
                                             </tr>
-                                        @elseif ($parentId == $folder->parent_id && $folder->is_accessible == true && $folder->deleted_at == null)
+                                        @elseif ($parentId == $folder->parent_id && $folder->is_accessible == false && $folder->deleted_at == null)
                                             <tr class=" cursor-not-allowed opacity-40 hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200">
                                                 <td class="px-5 py-1 sm:px-6">
                                                     <div class="flex items-center">

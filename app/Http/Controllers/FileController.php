@@ -140,7 +140,13 @@ class FileController extends Controller
     public function disable($id)
     {
         $file = File::findOrFail($id);
-        if ($file->is_removable == false || auth()->user()->id !== $file->created_by || $file->is_accessible == false || auth()->user()->role !== 'admin' ) 
+        if (auth()->user()->id !== $file->created_by){
+            if(auth()->user()->role !== 'admin'){
+                return redirect()->back()->with('error','Você não tem permissão para remover este ficheiro.');
+            }
+        }
+
+        if ($file->is_removable == false || $file->is_accessible == false) 
             return redirect()->back()->with('error','A remoção deste arquivo não é permitida.');
         
         $file->is_accessible = false;

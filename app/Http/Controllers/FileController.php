@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\File;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -21,8 +22,6 @@ class FileController extends Controller
 
     public function store(Request $request)
     {
-
-        // dd($request->all());
 
         $rules = [
             'files' => 'required',
@@ -44,7 +43,7 @@ class FileController extends Controller
     
         $validator = Validator::make($request->all(), $rules, $params);
         if ($validator->fails()) {
-            return redirect()->route('dashboard')->with('error', 'Falha ao publicar os ficheiros.');
+            return redirect()->back()->with('error', 'Falha ao publicar os ficheiros.');
         }
 
 
@@ -71,7 +70,6 @@ class FileController extends Controller
                 
                 $file->is_accessible = true;
                 $file->is_removable = true;
-                $file->is_editable = true;
                 $file->is_public = false;
                 
                 $file->save();
@@ -96,6 +94,10 @@ class FileController extends Controller
     public function update(Request $request, $id)
     {
         $file = File::findOrFail($id);
+
+        if (auth()->user()->id !== $file->created_by)
+            return redirect()->back()->with('error','A edição deste arquivo não é permitida.');
+
         // Validate and update the file
         $request->validate([
             'name' => 'required|string|max:255',
@@ -132,6 +134,9 @@ class FileController extends Controller
     public function disable($id)
     {
         $file = File::findOrFail($id);
+        if ($file->is_removable == false || auth()->user()->id !== $file->created_by || $file->is_accessible == false || auth()->user()->role !== 'admin' ) 
+            return redirect()->back()->with('error','A remoção deste arquivo não é permitida.');
+        
         $file->is_accessible = false;
         $file->deleted_by = auth()->user()->id;
         $file->save();
@@ -148,6 +153,9 @@ class FileController extends Controller
     public function download($id)
     {
         $file = File::findOrFail($id);
+        if ($file->is_accessible == false) 
+            return redirect()->back()->with('error', 'Acesso negado. O arquivo não é acessível.');
+
         $filePath = public_path($file->path);
         return response()->download($filePath, $file->name);
     }
@@ -155,6 +163,9 @@ class FileController extends Controller
     public function preview($id)
     {
         $file = File::findOrFail($id);
+        if ($file->is_accessible == false) 
+            return redirect()->back()->with('error', 'Acesso negado. O arquivo não é acessível.');
+        
         return response()->file(public_path($file->path));
     }
 }

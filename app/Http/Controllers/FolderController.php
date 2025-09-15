@@ -21,8 +21,6 @@ class FolderController extends Controller
     public function store(Request $request)
     {   
 
-        
-        //validate
         $request->validate([
             'name' => 'required|string|max:255|',
             'parent_id' => 'nullable|uuid',

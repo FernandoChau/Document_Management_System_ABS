@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\File;
 use App\Models\User;
+use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -95,10 +96,15 @@ class FileController extends Controller
     {
         $file = File::findOrFail($id);
 
-        if (auth()->user()->id !== $file->created_by)
-            return redirect()->back()->with('error','A edição deste arquivo não é permitida.');
+        // if (auth()->user()->id !== $file->created_by ) 
+        // dd(auth()->user()->role != 'admin');
+        if (auth()->user()->id !== $file->created_by){
+            if(auth()->user()->role != 'admin'){
+                return redirect()->back()->with('error','Você não tem permissão para editar este arquivo.');
+            }
+        } 
+        
 
-        // Validate and update the file
         $request->validate([
             'name' => 'required|string|max:255',
             'folder_id' => 'nullable|uuid',

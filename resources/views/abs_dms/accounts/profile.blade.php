@@ -21,7 +21,7 @@
   <!-- ===== Preloader Start ===== -->
   {{-- <include src="./partials/preloader.html">
     </inclwude> --}}
-    {{-- @include('abs_dms.partials.preloader') --}}
+    @include('abs_dms.partials.preloader') 
     <!-- ===== Preloader End ===== -->
 
     <!-- ===== Page Wrapper Start ===== -->

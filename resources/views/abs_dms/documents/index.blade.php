@@ -203,7 +203,7 @@
                                 <tbody
                                     class="divide-y border-b border-gray-100 dark:border-gray-800 divide-gray-100 dark:divide-gray-800">
                                     @foreach ($folders as $folder)
-                                        @if ($parentId == $file->folder_id && $folder->is_accessible == true && $folder->deleted_at == null)
+                                        @if ($parentId == $folder->parent_id && $folder->is_accessible == true && $folder->deleted_at == null)
                                             <tr class="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 active:bg-gray-200"
                                                 @dblclick="window.location='{{ route('dashboard.show', $folder->id) }}'">
                                                 <td class="px-5 py-1 sm:px-6">

@@ -24,13 +24,13 @@ return new class extends Migration
             $table->foreignId('current_team_id')->nullable();
             $table->string('profile_photo_path', 2048)->nullable();
 
-            $table->foreign('created_by')->references('id')->on('users');
-            $table->foreign('deactivated_by')->references('id')->on('users');
-            $table->foreign('activated_by')->references('id')->on('users');
+            $table->foreignId('created_by')->nullable();
+            $table->foreignId('deactivated_by')->nullable();
+            $table->foreignId('activated_by')->nullable();
             
             
-            $table->timestamp('activated_at');
-            $table->timestamp('deactivated_at');
+            $table->timestamp('activated_at')->nullable();
+            $table->timestamp('deactivated_at')->nullable();
             $table->timestamps();
             
             $table->foreign('created_by')

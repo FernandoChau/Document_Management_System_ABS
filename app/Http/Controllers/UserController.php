@@ -140,7 +140,7 @@ class UserController extends Controller
         return redirect()->back()->with('success','Utilizador desativado com sucesso');
     }
 
-    public function activate($id){
+    public function ativate($id){
         $user = User::find($id);
         $user = User::update([
                 'activated_by'=> auth()->user()->id,

@@ -86,6 +86,8 @@ Route::middleware('is_active')->group(function () {
 
         Route::prefix('user')->group(function () {
             Route::get('/',[UserController::class,'index'])->name('user.index');
+            Route::get('/pending',[UserController::class,'pending'])->name('user.pending');
+            Route::get('/deactivated',[UserController::class,'deactivated'])->name('user.deactivated');
             Route::post('/{id}/store', [UserController::class,'store'])->name('user.store');
             Route::put('/{id}/update', [UserController::class,'update'])->name('user.update');
             Route::put('/{id}/ativate', [UserController::class,'ativate'])->name('user.ativate');

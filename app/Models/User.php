@@ -71,4 +71,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+    
+    public function activator()
+    {
+        return $this->belongsTo(User::class, 'activated_by');
+    }
+
+    public function deactivator()
+    {
+        return $this->belongsTo(User::class, 'deactivated_by');
+    }
+    
 }

@@ -19,6 +19,7 @@ return new class extends Migration
             $table->boolean('is_activated')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('profession')->nullable();
             $table->rememberToken();
             $table->enum('role', ['admin', 'user'])->default('user')->nullable(false);
             $table->foreignId('current_team_id')->nullable();

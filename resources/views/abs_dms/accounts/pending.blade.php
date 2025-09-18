@@ -51,7 +51,7 @@
 
                     </div>
                     <div class="w-1/2 h-full flex items-center justify-end">
-                        <button @click="window.location.href = '{{ route('user.deactivated') }}'"
+                        <button @click="isAddNewFolderModal = true"
                             class="h-full flex gap-2 items-center justify-center text-sm text-gray-500 font-medium px-3 border-l border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200 dark:border-gray-800">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
@@ -59,11 +59,12 @@
 
                             Desativados
                         </button>
-                        <button @click="window.location.href = '{{ route('user.pending') }}'"
+                        <button @click="isAddNewFolderModal = true"
                             class="h-full flex gap-2 items-center justify-center text-sm text-gray-500 font-medium px-3 border-l border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200 dark:border-gray-800">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
                             </svg>
+
                             Pendentes
                         </button>
                         <button @click="isAddNewFileModal = true"
@@ -227,16 +228,7 @@
                                         </td>
                                         <td class="px-5 py-2 sm:px-6">
                                             <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                                                <div
-                                                    class="h-7 w-7  flex items-center justify-center rounded-full bg-gray-300 dark:bg-gray-800">
-                                                    <p class="text-gray-500 text-xs dark:text-gray-400">
-                                                        {{ Str::of($user->creator->name)->trim()->explode(' ')->map(fn($part) => $part[0])->take(2)->join('') }}
-                                                    </p>
-                                                </div>
-                                                <p
-                                                    class=" whitespace-nowrap text-gray-500 text-theme-sm dark:text-gray-400">
-                                                    {{ $user->creator->name }}
-                                                </p>
+                                                --
                                             </div>
                                         </td>
                                         <td class="px-5 py-2 sm:px-6">
@@ -276,10 +268,14 @@
                                                 </div>
 
                                                 <div
-                                                    class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-red-500 hover:cursor-pointer hover:text-white dark:hover:bg-red-500 dark:hover:text-white">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-4">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                                                    class="h-7 gap-2 px-2.5 flex items-center justify-center rounded-full text-white bg-brand-500 active:bg-brand-600 hover:cursor-pointer hover:text-white dark:hover:bg-brand-500 dark:hover:text-white dark:active:bg-brand-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
                                                     </svg>
+
+                                                    <p class="h-fit">
+                                                        Ativar 
+                                                    </p>
                                                 </div>
                                             </div>
                                         </td>

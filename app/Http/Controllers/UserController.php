@@ -9,8 +9,18 @@ use Illuminate\Http\Request;
 class UserController extends Controller
 {
     public function index(){
-        $user = User::all()->sortBy("name");
-        return view("User.index",compact("user"));
+        $User = User::all()->where('is_activated',true)->sortBy("name");
+        return view("abs_dms/accounts/index",compact("User"));
+    }
+    
+    public function pending(){
+        $User = User::all()->where('created_by',null)->sortBy("created_at");
+        return view("abs_dms/accounts/pending",compact("User"));
+    }
+
+    public function deactivated(){
+        $User = User::all()->where('deactivated_at',!null)->sortBy("deactivated_at");
+        return view("abs_dms/accounts/pending",compact("User"));
     }
 
     public function create(Request $request){

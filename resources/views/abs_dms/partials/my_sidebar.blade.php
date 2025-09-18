@@ -56,7 +56,7 @@
           </li>
           @if (Auth::user()->role == 'admin')
             <li>
-              <a href="{{route('account.index')}}" @click="selected = (selected === 'account_index' ? '':'account_index')"
+              <a href="{{route('user.index')}}" @click="selected = (selected === 'account_index' ? '':'account_index')"
                 :class="sidebarToggle ? 'menu-item group' : 'menu-item-collapsed group'"
                 :class=" (selected === 'account_index') && (page === 'account_index') ? 'menu-item-active' : 'menu-item-inactive'">
 
@@ -67,7 +67,7 @@
                 </svg>
 
                 <span class="menu-item-text" :class="sidebarToggle ? 'lg:hidden' : ''">
-                  Contas de Utilizadores
+                  Conta de Utilizadores
                 </span>
               </a>
             </li>

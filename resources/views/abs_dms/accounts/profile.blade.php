@@ -121,7 +121,7 @@
                         Phone
                       </p>
                       <p class="text-sm font-medium text-gray-800 dark:text-white/90">
-                        +258 87 339 8461
+                        {{ Auth::user()->phone }}
                       </p>
                     </div>
 
@@ -130,7 +130,7 @@
                         Cargo/Funcão
                       </p>
                       <p class="text-sm font-medium text-gray-800 dark:text-white/90">
-                        Assistente de plataformas digitais
+                        {{ Auth::user()->profession }}
                       </p>
                     </div>
                   </div>

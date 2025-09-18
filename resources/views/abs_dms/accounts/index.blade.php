@@ -44,14 +44,23 @@
             <!-- ===== Main Content Start ===== -->
             <main class="flex flex-col h-full w-full overflow-auto ">
                 <div
-                    class="flex items-center justify-center h-8.5 border-gray-200 bg-white lg:border-b dark:border-gray-800 dark:bg-gray-900 text-gray-800 dark:text-white/90">
-                    <p
-                        class="flex items-center justify-between w-full font-medium text-gray-500 text-theme-sm dark:text-gray-400">
-                    <div class="flex items-center gap-2 w-1/2">
-
+                    class="flex w-full px-4 items-center justify-between h-8.5 border-gray-200 bg-white lg:border-b dark:border-gray-800 dark:bg-gray-900 text-gray-800 dark:text-white/90">
+                    
+                    <div class="w-1/2 flex items-center gap-3">
+                        <nav>
+                            <ol class="flex items-center gap-1.5">
+                                <li>
+                                    <a class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"
+                                        href="{{ route('user.index') }}">
+                                        Contas de Utilizador
+                                    </a>
+                                </li>
+                            </ol>
+                        </nav>
                     </div>
                     <div class="w-1/2 h-full flex items-center justify-end">
-                        <button @click="window.location.href = '{{ route('user.deactivated') }}'"
+
+                        <button @click="window.location.href='{{ route('user.deactivated') }}'"
                             class="h-full flex gap-2 items-center justify-center text-sm text-gray-500 font-medium px-3 border-l border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200 dark:border-gray-800">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
@@ -59,11 +68,12 @@
 
                             Desativados
                         </button>
-                        <button @click="window.location.href = '{{ route('user.pending') }}'"
+                        <button @click="window.location.href='{{ route('user.pending') }}'"
                             class="h-full flex gap-2 items-center justify-center text-sm text-gray-500 font-medium px-3 border-l border-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200 dark:border-gray-800">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z" />
                             </svg>
+
                             Pendentes
                         </button>
                         <button @click="isAddNewFileModal = true"
@@ -73,17 +83,8 @@
                             </svg>
                             Utilizador
                         </button>
-
-                        {{-- <button @click="isAddNewFileModal = true"
-                            class="inline-flex items-center gap-2 px-4 py-1.5 text-xs font-medium text-white rounded-sm transition bg-brand-500/95 shadow-theme-xs hover:bg-brand-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                                stroke="currentColor" class="size-4">
-                                <path stroke-linecap="round" stroke-linejoin="round"
-                                    d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
-                            </svg>
-                            Novo Ficheiro
-                        </button> --}}
                     </div>
+
                 </div>
                 <div class="flex flex-col items-start h-full w-full max-h-full overflow-auto">
                     <div class="overflow-hidden w-full">

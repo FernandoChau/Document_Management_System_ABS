@@ -20,7 +20,7 @@ class UserController extends Controller
 
     public function deactivated(){
         $User = User::all()->where('deactivated_at',!null)->sortBy("deactivated_at");
-        return view("abs_dms/accounts/pending",compact("User"));
+        return view("abs_dms/accounts/deactivated",compact("User"));
     }
 
     public function create(Request $request){

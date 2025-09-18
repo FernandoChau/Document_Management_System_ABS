@@ -19,7 +19,7 @@ class CheckUserRole
         $user = Auth::user();
 
         if (!$user || !in_array($user->role, $roles)) {
-            abort(403, 'Acesso negado');
+            return redirect()->back()->with("error","Opps! Acesso negado. Contacte o Administrador.");
         }
         return $next($request);
     }

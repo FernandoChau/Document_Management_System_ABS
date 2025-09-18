@@ -15,13 +15,38 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->double('phone')->nullable();
+            $table->boolean('is_activated')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
             $table->enum('role', ['admin', 'user'])->default('user')->nullable(false);
             $table->foreignId('current_team_id')->nullable();
             $table->string('profile_photo_path', 2048)->nullable();
+
+            $table->foreign('created_by')->references('id')->on('users');
+            $table->foreign('deactivated_by')->references('id')->on('users');
+            $table->foreign('activated_by')->references('id')->on('users');
+            
+            
+            $table->timestamp('activated_at');
+            $table->timestamp('deactivated_at');
             $table->timestamps();
+            
+            $table->foreign('created_by')
+                ->references('id')
+                ->on('users')
+                ->onDelete('set null');
+
+            $table->foreign('deactivated_by')
+                ->references('id')
+                ->on('users')
+                ->onDelete('set null');
+
+            $table->foreign('activated_by')
+                ->references('id')
+                ->on('users')
+                ->onDelete('set null');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

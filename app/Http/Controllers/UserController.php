@@ -20,7 +20,7 @@ class UserController extends Controller
             'email' => 'required|email:rfc,dns|ends_with:fernando.co.mz|unique:users,email',
             'phone' => 'nullable|digits:9',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|string|in:admin,user,gestor', // ajusta conforme teus roles
+            'role' => 'required|string|in:admin,user,gestor', 
             'profession' => 'nullable|string|max:100',
             'is_activated' => 'required|boolean',
         ], [
@@ -71,7 +71,7 @@ class UserController extends Controller
         return redirect()->back()->with('success','Utilizador Criado Com Sucesso.');
     }
 
-    public function update(Request $request, $id)
+    public function update(Request $request, $id){
         $user = User::findOrFail($id);
 
         $request->validate([
@@ -79,7 +79,7 @@ class UserController extends Controller
             'email' => 'required|email:rfc,dns|ends_with:fernando.co.mz|unique:users,email',
             'phone' => 'nullable|digits:9',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|string|in:admin,user,gestor', // ajusta conforme teus roles
+            'role' => 'required|string|in:admin,user', 
             'profession' => 'nullable|string|max:100',
             'is_activated' => 'required|boolean',
         ], [
@@ -125,7 +125,7 @@ class UserController extends Controller
         
         return redirect()->back()->with('success','Utilizador atualizado com sucesso Com Sucesso.');
 
-    
+    }
     
     public function deativate($id){
         $user = User::find($id);

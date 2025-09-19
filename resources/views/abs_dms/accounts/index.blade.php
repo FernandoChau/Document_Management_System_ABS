@@ -11,7 +11,10 @@
 </head>
 
 <body
-    x-data="{ page: 'account_index', 'loaded': true, 'darkMode': false, 'stickyMenu': false, 'sidebarToggle': true, 'scrollTop': false }"
+    x-data="{ page: 'account_index', 'loaded': true, 'darkMode': false, 'stickyMenu': false, 'sidebarToggle': true, 'scrollTop': false, 
+        'isDeactivationUserModal':false, 'deactivateUserData': {id:'', name:'', email:''},
+        'isAddNewFileModal': false,
+    }"
     x-init="
          darkMode = JSON.parse(localStorage.getItem('darkMode'));
          $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
@@ -276,12 +279,24 @@
                                                     </svg>
                                                 </div>
 
-                                                <div
+                                                <button
+                                                    @click="
+                                                        isDeactivationUserModal = true;
+                                                        deactivateUserData = {
+                                                            id: $el.dataset.userId,
+                                                            name: $el.dataset.userName,
+                                                            email: $el.dataset.userEmail,
+                                                        }
+                                                    "
+                                                    data-user-id="{{ $user->id }}"
+                                                    data-user-name="{{ $user->name }}"
+                                                    data-user-email="{{ $user->email }}"
+
                                                     class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-red-500 hover:cursor-pointer hover:text-white dark:hover:bg-red-500 dark:hover:text-white">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-4">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
                                                     </svg>
-                                                </div>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -296,6 +311,8 @@
         <!-- ===== Content Area End ===== -->
     </div>
     <!-- ===== Page Wrapper End ===== -->
+    @include('abs_dms.partials.account.user-deactivation-modal')
+    @include('abs_dms.partials.account.new-user-modal')
 </body>
 
 </html>

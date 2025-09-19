@@ -11,7 +11,9 @@
 </head>
 
 <body
-    x-data="{ page: 'account_index', 'loaded': true, 'darkMode': false, 'stickyMenu': false, 'sidebarToggle': true, 'scrollTop': false }"
+    x-data="{ page: 'account_index', 'loaded': true, 'darkMode': false, 'stickyMenu': false, 'sidebarToggle': true, 'scrollTop': false,
+        'isConfirmUserModal': false, 'confirmUserData': {id:'', name:'', role:'', email:'', phone:'',profession:''},
+    }"
     x-init="
          darkMode = JSON.parse(localStorage.getItem('darkMode'));
          $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
@@ -61,9 +63,9 @@
                                     </a>
                                 </li>
 
-                                        <li class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                            <a href="{{ route('user.deactivated') }}">Contas Pendentes</a>
-                                        </li>
+                                <li class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                    <a href="{{ route('user.deactivated') }}">Contas Pendentes</a>
+                                </li>
    
                             </ol>
                         </nav>
@@ -277,16 +279,35 @@
                                                     </svg>
                                                 </div>
 
-                                                <div
+                                                <button
+                                                    @click="
+                                                        isConfirmUserModal = true;
+                                                        confirmUserData = {
+                                                            id: $el.dataset.userId,
+                                                            name: $el.dataset.userName,
+                                                            role: $el.dataset.userRole,
+                                                            email: $el.dataset.userEmail,
+                                                            phone: $el.dataset.userPhone,
+                                                            profession: $el.dataset.userProfession,
+                                                        }
+                                                    "
+
+                                                    data-user-id="{{ $user->id }}"
+                                                    data-user-name="{{ $user->name }}"
+                                                    data-user-role="{{ $user->role }}"
+                                                    data-user-email="{{ $user->email }}"
+                                                    data-user-phone="{{ $user->phone }}"
+                                                    data-user-profession="{{ $user->profession }}"
+
                                                     class="h-7 gap-2 px-2.5 flex items-center justify-center rounded-full text-white bg-brand-500 active:bg-brand-600 hover:cursor-pointer hover:text-white dark:hover:bg-brand-500 dark:hover:text-white dark:active:bg-brand-600">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
                                                     </svg>
 
                                                     <p class="h-fit">
-                                                        Ativar 
+                                                        Confirmar
                                                     </p>
-                                                </div>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -301,6 +322,9 @@
         <!-- ===== Content Area End ===== -->
     </div>
     <!-- ===== Page Wrapper End ===== -->
+
+
+    @include('abs_dms.partials.account.confirm-user-modal')
 </body>
 
 </html>

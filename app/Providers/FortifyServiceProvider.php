@@ -36,6 +36,10 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::redirectUserForTwoFactorAuthenticationUsing(RedirectIfTwoFactorAuthenticatable::class);
 
+        Fortify::registerView(function () {
+            return view('abs_dms.accounts.register');
+        });
+
         Fortify::twoFactorChallengeView(function () {
             return view('abs_dms/accounts/two-factor-challenge-verification'); // aqui coloca a tua view
         });

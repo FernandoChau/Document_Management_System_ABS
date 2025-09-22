@@ -37,7 +37,7 @@
                             class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
                     </div>
 
-                    <div>
+                    <div class="opacity-60">
                         <label
                             class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                             Email
@@ -45,11 +45,12 @@
                         <input
                             type="text"
                             name="email"
+                            disabled
                             x-model="confirmUserData.email"
                             class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
                     </div>
 
-                    <div>
+                    <div class=" opacity-60">
                         <label
                             class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-400">
                             Telefone
@@ -57,6 +58,7 @@
                         <input
                             type="text"
                             name="phone"
+                            disabled
                             x-model="confirmUserData.phone"
                             class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
                     </div>
@@ -68,7 +70,7 @@
                         </label>
                         <input
                             type="text"
-                            x-model="confirmUserData.profission"
+                            name="profession"
                             class="dark:bg-dark-900 shadow-theme-xs focus:border-brand-300 focus:ring-brand-500/10 dark:focus:border-brand-800 h-11 w-full rounded-lg border border-gray-300 bg-transparent px-4 py-2.5 text-sm text-gray-800 placeholder:text-gray-400 focus:ring-3 focus:outline-hidden dark:border-gray-700 dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30" />
                     </div>
 

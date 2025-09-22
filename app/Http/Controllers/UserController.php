@@ -169,9 +169,6 @@ class UserController extends Controller
         
         $request->validate([
             'name' => 'required|string|min:3|max:255',
-            'email' => 'required|email:rfc,dns|ends_with:gmail.com',
-            // 'email' => 'required|email:rfc,dns|ends_with:abspro.co.mz',
-            'phone' => 'nullable|digits:9',
             'role' => 'required|string|in:admin,user,gestor', 
             'profession' => 'nullable|string|max:100',
         ], [
@@ -195,9 +192,9 @@ class UserController extends Controller
             'profession.max' => 'A profissão não pode ultrapassar :max caracteres.',
         ]);
 
-        
+        // dd($request->profession);
         $user->name = $request->name;
-        $user->phone = $request->phone;
+        // $user->phone = $request->phone;
         $user->role = $request->role;
         $user->profession = $request->profession;
         
@@ -208,9 +205,9 @@ class UserController extends Controller
         $user->save();
         
         if(!$user)
-            return redirect()->back()->with('error','Erro ao ativar utilizador');
+            return redirect()->route('user.index')->with('error','Erro ao ativar utilizador');
 
-        return redirect()->back()->with('success','Utilizador ativado com sucesso');
+        return redirect()->route('user.index')->with('success','Utilizador ativado com sucesso');
     }
     
 }

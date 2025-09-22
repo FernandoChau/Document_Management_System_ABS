@@ -48,7 +48,7 @@
             <main class="flex flex-col h-full w-full overflow-auto ">
                 <div
                     class="flex w-full px-4 items-center justify-between h-8.5 border-gray-200 bg-white lg:border-b dark:border-gray-800 dark:bg-gray-900 text-gray-800 dark:text-white/90">
-                    
+
                     <div class="w-1/2 flex items-center gap-3">
                         <nav>
                             <ol class="flex items-center gap-1.5">
@@ -102,6 +102,21 @@
                                                 class="flex items-center justify-between text-gray-500  dark:text-gray-400">
                                                 <p class="font-medium text-theme-xs ">
                                                     Utilizador
+                                                </p>
+
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                                    stroke-width="2" stroke="currentColor" class="size-2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
+                                                </svg>
+                                            </div>
+                                        </th>
+                                        <th
+                                            class="px-3 sm:px-6 cursor-pointer hover:bg-gray-100 hover:dark:bg-gray-800">
+                                            <div
+                                                class="flex items-center justify-between text-gray-500 dark:text-gray-400">
+                                                <p class="font-medium text-theme-xs">
+                                                    Role
                                                 </p>
 
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -205,6 +220,18 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td class="px-5 py-2 flex justify-end sm:px-6">
+                                            <span
+                                                class="flex items-center w-fit justify-center gap-1 rounded-full bg-brand-500/5 border border-brand-500 text-theme-sm  py-0.5 pl-2 pr-2.5 font-medium text-brand-500">
+                                                    
+                                                @if ($user->role === 'admin')
+                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
+                                                        <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
+                                                    </svg>
+                                                @endif
+                                                {{ $user->role === 'admin' ? 'Administrador' : 'Utilizador' }}
+                                            </span>
                                         </td>
                                         <td class="px-5 py-2 sm:px-6">
                                             <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">

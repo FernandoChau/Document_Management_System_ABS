@@ -11,7 +11,9 @@
 </head>
 
 <body
-    x-data="{ page: 'account_index', 'loaded': true, 'darkMode': false, 'stickyMenu': false, 'sidebarToggle': true, 'scrollTop': false }"
+    x-data="{ page: 'account_index', 'loaded': true, 'darkMode': false, 'stickyMenu': false, 'sidebarToggle': true, 'scrollTop': false,
+        'isActivateUserModal': false, 'activateUserData':{id: '', name: '', email: ''},
+    }"
     x-init="
          darkMode = JSON.parse(localStorage.getItem('darkMode'));
          $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))"
@@ -276,7 +278,18 @@
                                                     </svg>
                                                 </div>
 
-                                                <div
+                                                <button
+                                                    @click="
+                                                        isActivateUserModal = true;
+                                                        activateUserData = {
+                                                            id: $el.dataset.userId,
+                                                            name: $el.dataset.userName,
+                                                            email: $el.dataset.userEmail,
+                                                        }
+                                                    "
+                                                    data-user-id="{{ $user->id }}"
+                                                    data-user-name="{{ $user->name }}"
+                                                    data-user-email="{{ $user->email }}"
                                                     class="h-7 gap-2 px-2.5 flex items-center justify-center rounded-full text-white bg-brand-500 active:bg-brand-600 hover:cursor-pointer hover:text-white dark:hover:bg-brand-500 dark:hover:text-white dark:active:bg-brand-600">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
@@ -285,7 +298,7 @@
                                                     <p class="h-fit">
                                                         Ativar 
                                                     </p>
-                                                </div>
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -300,6 +313,8 @@
         <!-- ===== Content Area End ===== -->
     </div>
     <!-- ===== Page Wrapper End ===== -->
+
+    @include('abs_dms.partials.account.user-activation-modal')
 </body>
 
 </html>

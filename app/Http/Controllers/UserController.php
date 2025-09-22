@@ -152,15 +152,16 @@ class UserController extends Controller
 
     public function ativate($id){
         $user = User::find($id);
-        
+
         $user->activated_by = auth()->user()->id;
         $user->is_activated = true;
+        $user->deactivated_at = null;
         $user->activated_at = now();
         
         if($user->save())
             return redirect()->back()->with('error','Erro ao ativar utilizador');
 
-        return redirect()->back()->with('success','Utilizador ativado com sucesso');
+        return redirect()->route('user.index')->with('success','Utilizador ativado com sucesso');
     }
 
     public function confirm (Request $request, $id){  

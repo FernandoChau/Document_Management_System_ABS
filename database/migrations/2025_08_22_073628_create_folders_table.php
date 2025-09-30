@@ -14,6 +14,7 @@ return new class extends Migration {
 
             $table->uuid('id')->primary(); 
             $table->string('name');
+            $table->string('folder_ref');
             $table->uuid('parent_id')->nullable(); 
             $table->enum('tag', ['Important', 'Relevant', 'Optional'])->default('Optional');
             $table->string('link')->nullable();

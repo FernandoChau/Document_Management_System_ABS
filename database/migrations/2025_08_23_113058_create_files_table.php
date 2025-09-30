@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('files', function (Blueprint $table) {
             $table->uuid('id')->primary(); // UUID como chave primária
             $table->string('name');
+            $table->string('file_ref')->unique()->nullable(false);
             $table->string('path')->nullable();
             $table->string('link')->nullable();
             $table->string('extension')->nullable();

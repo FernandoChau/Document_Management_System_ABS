@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\File;
+use App\Models\Folder;
 use App\Models\User;
 use Illuminate\Container\Attributes\Auth;
 use Illuminate\Http\Request;
@@ -24,6 +25,8 @@ class FileController extends Controller
     public function store(Request $request)
     {
 
+        $filesInFolder = count(File::where('folder_id', $request->folder_id)->get()) + 1;
+        
         $rules = [
             'files' => 'required',
             'files.*' => 'file',
@@ -47,6 +50,11 @@ class FileController extends Controller
             return redirect()->back()->with('error', 'Falha ao publicar os ficheiros.');
         }
 
+        if ($request->folder_id === null) {
+            $fileRef = 'ABS'.'.'. str_pad($filesInFolder, 4, '0', STR_PAD_LEFT).'.'.now()->format('y');
+        }else{
+            $fileRef = Folder::find($request->folder_id)->folder_ref.'.'. str_pad($filesInFolder, 4, '0', STR_PAD_LEFT).'.'.now()->format('y');
+        }
 
         $files = $request->file('files');
         if ($files && is_array($files)) {
@@ -59,6 +67,7 @@ class FileController extends Controller
 
                 $file = new File();
                 $file->name = $fileName;
+                $file->file_ref = $fileRef;
                 $file->extension = $fileRequestExt;
                 $file->size = $fileSize;
                 $file->path = 'uploads/' . $fileName;
@@ -96,8 +105,6 @@ class FileController extends Controller
     {
         $file = File::findOrFail($id);
 
-        // if (auth()->user()->id !== $file->created_by ) 
-        // dd(auth()->user()->role != 'admin');
         if (auth()->user()->id !== $file->created_by){
             if(auth()->user()->role != 'admin'){
                 return redirect()->back()->with('error','Você não tem permissão para editar este arquivo.');

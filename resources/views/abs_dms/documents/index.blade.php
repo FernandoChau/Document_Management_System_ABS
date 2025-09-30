@@ -176,6 +176,14 @@
                                             <div class="flex items-center">
                                                 <p
                                                     class="whitespace-nowrap font-medium text-gray-400 text-xs dark:text-gray-400">
+                                                    Referência
+                                                </p>
+                                            </div>
+                                        </th>
+                                        <th class="px-3 sm:px-6">
+                                            <div class="flex items-center">
+                                                <p
+                                                    class="whitespace-nowrap font-medium text-gray-400 text-xs dark:text-gray-400">
                                                     Ultima Modificação
                                                 </p>
                                             </div>
@@ -226,6 +234,14 @@
                                                                 </span>
                                                             </div>
                                                         </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-5 py-4 sm:px-6">
+                                                    <div class="flex items-center justify-center">
+                                                        <p
+                                                            class=" whitespace-nowrap text-gray-500 text-theme-sm dark:text-gray-400">
+                                                            {{ $folder->folder_ref }}
+                                                        </p>
                                                     </div>
                                                 </td>
                                                 <td class="px-5 py-4 sm:px-6">
@@ -414,6 +430,14 @@
                                                     </div>
                                                 </td>
                                                 <td class="px-5 py-4 sm:px-6">
+                                                    <div class="flex items-center justify-center">
+                                                        <p
+                                                            class=" whitespace-nowrap text-gray-500 text-theme-sm dark:text-gray-400">
+                                                            {{ $folder->folder_ref}}
+                                                        </p>
+                                                    </div>
+                                                </td>
+                                                <td class="px-5 py-4 sm:px-6">
                                                     <div class="flex items-center">
                                                         <p
                                                             class=" whitespace-nowrap text-gray-500 text-theme-sm dark:text-gray-400">
@@ -568,6 +592,14 @@
 
                                                             </div>
                                                         </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-5 py-4 sm:px-6">
+                                                    <div class="flex items-center justify-center">
+                                                        <p
+                                                            class=" whitespace-nowrap text-gray-500 text-theme-sm dark:text-gray-400">
+                                                            {{ $file->file_ref }}
+                                                        </p>
                                                     </div>
                                                 </td>
                                                 <td class="px-5 py-4 sm:px-6">
@@ -771,6 +803,14 @@
 
                                                             </div>
                                                         </div>
+                                                    </div>
+                                                </td>
+                                                <td class="px-5 py-4 sm:px-6">
+                                                    <div class="flex items-center justify-center">
+                                                        <p
+                                                            class=" whitespace-nowrap text-gray-500 text-theme-sm dark:text-gray-400">
+                                                            {{ $file->file_ref }}
+                                                        </p>
                                                     </div>
                                                 </td>
                                                 <td class="px-5 py-4 sm:px-6">

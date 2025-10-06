@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Folder;
+use App\Services\FolderZipper;
 use Illuminate\Http\Request;
 
 class FolderController extends Controller
@@ -162,5 +163,11 @@ class FolderController extends Controller
         }
         $folder->delete();
         return redirect()->back()->with('success', 'Pasta excluída com sucesso.');
+    }
+
+    public function download($id, FolderZipper $zipper){
+        $folder = Folder::findOrFail($id);
+        return$zipper->downloadZip($folder,$folder->name);
+        // return redirect()->back()->with('success','Download iniciado com sucesso.');
     }
 }

@@ -66,6 +66,7 @@ class ShareController extends Controller
     // público: consome o link e baixa
     public function show(string $token, FolderZipper $zipper)
     {
+        dd($zipper);
         $link = SharedLink::where('token', $token)->firstOrFail();
 
         if ($link->isExpired()) {

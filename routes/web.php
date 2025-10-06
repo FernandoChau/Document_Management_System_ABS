@@ -69,6 +69,7 @@ Route::middleware('is_active')->group(function () {
             Route::put('/{id}', [FolderController::class, 'update'])->name('folders.update');
             Route::delete('/{id}', [FolderController::class, 'destroy'])->name('folders.destroy');
             Route::put('disable/{id}', [FolderController::class, 'disable'])->name('folders.disable');
+            Route::get('/download/{id}', [FolderController::class, 'download'])->name('folders.download');
         });
 
         Route::prefix('files')->group(function () {

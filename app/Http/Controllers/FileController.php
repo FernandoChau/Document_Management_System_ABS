@@ -161,9 +161,9 @@ class FileController extends Controller
         if (!$file->is_accessible) 
             return redirect()->back()->with('error', 'Acesso negado. O arquivo não é acessível.');
 
-        // 🔥 gera URL temporária (assinada) para download seguro
-        $url = Storage::disk('wasabi')->temporaryUrl($file->path, now()->addMinutes(10));
-        return redirect($url);
+        return response()->streamDownload(function() use ($file) {
+            echo Storage::disk('wasabi')->get($file->path);
+        }, $file->name);
     }
 
     public function preview($id)

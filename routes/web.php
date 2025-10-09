@@ -29,6 +29,10 @@ Route::middleware('is_active')->group(function () {
             $parentId = null;
             return view('abs_dms/documents/index', compact('folders', 'files', 'parentId'));
         })->name('dashboard');
+        Route::get('/dashboard/all', function () {
+            $files = File::get()->sortBy('name');
+            return view('abs_dms/documents/all',  [ 'files' => $files]);
+        })->name('dashboard.all');
     });
 
     Route::get('/dashboard/{id}', function ($id) {
@@ -57,7 +61,7 @@ Route::middleware('is_active')->group(function () {
     })->name('dashboard.show');
 
 
-    Route::middleware('auth')->group(function () {
+    Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified',])->group(function () {
 
         Route::prefix('folders')->group(function () {
             Route::get('/', [FolderController::class, 'index'])->name('folders.index');

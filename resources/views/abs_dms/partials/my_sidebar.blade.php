@@ -1,6 +1,6 @@
 <script src="https://unpkg.com/alpinejs" defer></script>
 <aside :class="sidebarToggle ? 'translate-x-0 lg:w-[90px]' : '-translate-x-full'"
-  class="sidebar fixed left-0 top-0 z-9999 flex h-screen w-[230px] flex-col overflow-y-hidden border-r border-gray-200 bg-white px-1 dark:border-gray-800 dark:bg-black lg:static lg:translate-x-0">
+  class="sidebar fixed left-0 top-0 z-9999 flex h-screen w-[230px] flex-col overflow-y-hidden border-r border-gray-200 bg-white px-1 dark:border-gray-800 dark:bg-gray-900 lg:static lg:translate-x-0">
   <!-- SIDEBAR HEADER -->
   <div :class="sidebarToggle ? 'justify-center' : 'justify-between'"
     class="flex items-center gap-2 pt-3 sidebar-header pb-7">

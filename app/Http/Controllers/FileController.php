@@ -23,7 +23,7 @@ class FileController extends Controller
 
     public function store(Request $request)
     {
-        $filesInFolder = count(File::where('folder_id', $request->folder_id)->get()) + 1;
+
 
         $rules = [
             'files' => 'required',
@@ -42,24 +42,29 @@ class FileController extends Controller
             'is_accessible.boolean' => 'O campo de acessibilidade deve ser verdadeiro ou falso',
             'is_removable.boolean' => 'O campo de remoção deve ser verdadeiro ou falso',
         ];
-    
+
         $validator = Validator::make($request->all(), $rules, $params);
         if ($validator->fails()) {
             return redirect()->back()->with('error', 'Falha ao publicar os ficheiros.');
         }
 
-        if ($request->folder_id === null) {
-            $fileRef = 'ABS'.'.'. str_pad($filesInFolder, 4, '0', STR_PAD_LEFT).'.'.now()->format('y');
-        } else {
-            $fileRef = Folder::find($request->folder_id)->folder_ref.'.'. str_pad($filesInFolder, 4, '0', STR_PAD_LEFT).'.'.now()->format('y');
-        }
 
         $files = $request->file('files');
         if ($files && is_array($files)) {
             foreach ($files as $fileRequest) {
+
+                $filesInFolder = count(File::where('folder_id', $request->folder_id)->get()) + 1;
+
+
+                if ($request->folder_id === null) {
+                    $fileRef = 'ABS' . '.' . str_pad($filesInFolder, 4, '0', STR_PAD_LEFT) . '.' . now()->format('y');
+                } else {
+                    $fileRef = Folder::find($request->folder_id)->folder_ref . '.' . str_pad($filesInFolder, 4, '0', STR_PAD_LEFT) . '.' . now()->format('y');
+                }
+
                 $fileSize = $fileRequest->getSize();
                 $fileRequestExt = $fileRequest->getClientOriginalExtension();
-                $fileName = $fileRef.'.'.pathinfo($fileRequest->getClientOriginalName(), PATHINFO_FILENAME) . '.' . $fileRequestExt;
+                $fileName = $fileRef . '.' . pathinfo($fileRequest->getClientOriginalName(), PATHINFO_FILENAME) . '.' . $fileRequestExt;
 
                 // 🔥 Upload direto para Wasabi
                 $path = Storage::disk('wasabi')->putFileAs('uploads', $fileRequest, $fileName, ['visibility' => 'private']);
@@ -76,11 +81,11 @@ class FileController extends Controller
                 $file->created_by = auth()->user()->id;
                 $file->updated_by = null;
                 $file->deleted_by = null;
-                
+
                 $file->is_accessible = true;
                 $file->is_removable = true;
                 $file->is_public = false;
-                
+
                 $file->save();
             }
         }
@@ -105,9 +110,9 @@ class FileController extends Controller
         $file = File::findOrFail($id);
 
         if (auth()->user()->id !== $file->created_by && auth()->user()->role != 'admin') {
-            return redirect()->back()->with('error','Você não tem permissão para editar este arquivo.');
-        } 
-        
+            return redirect()->back()->with('error', 'Você não tem permissão para editar este arquivo.');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'folder_id' => 'nullable|uuid',
@@ -132,16 +137,16 @@ class FileController extends Controller
     {
         $file = File::findOrFail($id);
         if (auth()->user()->id !== $file->created_by && auth()->user()->role !== 'admin') {
-            return redirect()->back()->with('error','Você não tem permissão para remover este ficheiro.');
+            return redirect()->back()->with('error', 'Você não tem permissão para remover este ficheiro.');
         }
 
-        if (!$file->is_removable || !$file->is_accessible) 
-            return redirect()->back()->with('error','A remoção deste arquivo não é permitida.');
-        
+        if (!$file->is_removable || !$file->is_accessible)
+            return redirect()->back()->with('error', 'A remoção deste arquivo não é permitida.');
+
         $file->is_accessible = false;
         $file->deleted_by = auth()->user()->id;
         $file->save();
-        return redirect()->back()->with('success','Arquivo Removido com sucesso.');
+        return redirect()->back()->with('success', 'Arquivo Removido com sucesso.');
     }
 
     public function destroy($id)
@@ -152,16 +157,16 @@ class FileController extends Controller
         Storage::disk('wasabi')->delete($file->path);
 
         $file->delete();
-        return redirect()->back()->with('success','Arquivo excluído com sucesso.');
+        return redirect()->back()->with('success', 'Arquivo excluído com sucesso.');
     }
 
     public function download($id)
     {
         $file = File::findOrFail($id);
-        if (!$file->is_accessible) 
+        if (!$file->is_accessible)
             return redirect()->back()->with('error', 'Acesso negado. O arquivo não é acessível.');
 
-        return response()->streamDownload(function() use ($file) {
+        return response()->streamDownload(function () use ($file) {
             echo Storage::disk('wasabi')->get($file->path);
         }, $file->name);
     }
@@ -169,7 +174,7 @@ class FileController extends Controller
     public function preview($id)
     {
         $file = File::findOrFail($id);
-        if (!$file->is_accessible) 
+        if (!$file->is_accessible)
             return redirect()->back()->with('error', 'Acesso negado. O arquivo não é acessível.');
 
         // 🔥 gera URL temporária para visualizar

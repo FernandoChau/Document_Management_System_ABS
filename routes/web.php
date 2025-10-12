@@ -10,6 +10,8 @@ use App\Http\Controllers\TwoFactorController;
 use Laravel\Fortify\Http\Controllers\TwoFactorAuthenticationController;
 use App\Models\Folder;
 use App\Models\File;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 Route::get('/', function () {
     // return view('abs_dms/accounts/two-factor-challenge-verification');
@@ -29,9 +31,74 @@ Route::middleware('is_active')->group(function () {
             $parentId = null;
             return view('abs_dms/documents/index', compact('folders', 'files', 'parentId'));
         })->name('dashboard');
-        Route::get('/dashboard/all', function () {
-            $files = File::get()->sortBy('name');
-            return view('abs_dms/documents/all',  [ 'files' => $files]);
+        Route::get('/dashboard/all', function (Request $request) {
+            // construir query com filtros opcionais (datas e ordenação)
+            $query = File::with('creator')->whereNull('deleted_at');
+
+            // Filtrar por intervalo de datas (created_at)
+            if ($request->filled('date_from')) {
+                $query->whereDate('created_at', '>=', $request->get('date_from'));
+            }
+            if ($request->filled('date_to')) {
+                $query->whereDate('created_at', '<=', $request->get('date_to'));
+            }
+
+            // Ordenação
+            $sort = $request->get('sort', 'created_at_desc');
+            switch ($sort) {
+                case 'created_at_asc':
+                    $query->orderBy('created_at', 'asc');
+                    break;
+                case 'created_at_desc':
+                    $query->orderBy('created_at', 'desc');
+                    break;
+                case 'name_asc':
+                    $query->orderBy('name', 'asc');
+                    break;
+                case 'name_desc':
+                    $query->orderBy('name', 'desc');
+                    break;
+                case 'size_asc':
+                    $query->orderBy('size', 'asc');
+                    break;
+                case 'size_desc':
+                    $query->orderBy('size', 'desc');
+                    break;
+                default:
+                    $query->orderBy('created_at', 'desc');
+                    break;
+            }
+
+            // Filtrar por uploader (quem fez upload) e editor (quem atualizou)
+            if ($request->filled('uploader')) {
+                $query->where('created_by', $request->get('uploader'));
+            }
+            if ($request->filled('editor')) {
+                $query->where('updated_by', $request->get('editor'));
+            }
+
+            // Paginação por defeito para evitar devolver tudo
+            $files = $query->paginate(100)->withQueryString();
+
+            // carregar lista de users para popular selects
+            $users = User::orderBy('name')->get();
+
+            // Se for uma request AJAX, retornar apenas as rows (partial) como HTML
+            if ($request->ajax() || $request->wantsJson()) {
+                return view('abs_dms.documents.partials._rows', compact('files'))->render();
+            }
+
+            return view('abs_dms/documents/all', [
+                'files' => $files,
+                'users' => $users,
+                'filters' => [
+                    'date_from' => $request->get('date_from'),
+                    'date_to' => $request->get('date_to'),
+                    'sort' => $sort,
+                    'uploader' => $request->get('uploader'),
+                    'editor' => $request->get('editor'),
+                ],
+            ]);
         })->name('dashboard.all');
     });
 

@@ -106,12 +106,12 @@
                         <!-- Filter form (GET) -->
                         <form method="GET" action="{{ route('dashboard.all') }}" class="ml-3 flex items-center gap-2">
                             <label class="text-xs text-gray-500 dark:text-gray-400">De</label>
-                            <input type="date" name="date_from" value="{{ isset($filters['date_from']) ? $filters['date_from'] : request('date_from') }}" class="text-sm px-2 py-1 border rounded dark:bg-gray-800 dark:border-gray-700" />
+                            <input type="date" name="date_from" value="{{ isset($filters['date_from']) ? $filters['date_from'] : request('date_from') }}" class=" cursor-pointer text-sm px-2 py-0.5 border text-gray-500  rounded dark:bg-gray-800 dark:border-gray-700" />
 
                             <label class="text-xs text-gray-500 dark:text-gray-400">Até</label>
-                            <input type="date" name="date_to" value="{{ isset($filters['date_to']) ? $filters['date_to'] : request('date_to') }}" class="text-sm px-2 py-1 border rounded dark:bg-gray-800 dark:border-gray-700" />
+                            <input type="date" name="date_to" value="{{ isset($filters['date_to']) ? $filters['date_to'] : request('date_to') }}" class=" cursor-pointer text-sm px-2 py-0.5 border text-gray-500  rounded dark:bg-gray-800 dark:border-gray-700" />
 
-                            <select name="sort" class="text-sm px-2 py-1 border rounded dark:bg-gray-800 dark:border-gray-700">
+                            <select name="sort" class=" cursor-pointer text-sm px-2 py-1 border rounded text-gray-500 dark:bg-gray-800 dark:border-gray-700">
                                 @php $currentSort = isset($filters['sort']) ? $filters['sort'] : request('sort', 'created_at_desc'); @endphp
                                 <option value="created_at_desc" {{ $currentSort == 'created_at_desc' ? 'selected' : '' }}>Data (mais recente)</option>
                                 <option value="created_at_asc" {{ $currentSort == 'created_at_asc' ? 'selected' : '' }}>Data (mais antiga)</option>
@@ -126,7 +126,7 @@
                             @endphp
 
                             <!-- Filter by uploader -->
-                            <select name="uploader" class="text-sm px-2 py-1 border rounded dark:bg-gray-800 dark:border-gray-700">
+                            <select name="uploader" class=" cursor-pointer text-sm px-2 py-1 border rounded text-gray-500 dark:bg-gray-800 dark:border-gray-700">
                                 <option value="">Todos (Uploader)</option>
                                 @foreach(($users ?? []) as $u)
                                     <option value="{{ $u->id }}" {{ $selectedUploader == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>
@@ -134,7 +134,7 @@
                             </select>
 
                             <!-- Filter by editor -->
-                            <select name="editor" class="text-sm px-2 py-1 border rounded dark:bg-gray-800 dark:border-gray-700">
+                            <select name="editor" class=" cursor-pointer text-sm px-2 py-1 text-gray-500 border rounded dark:bg-gray-800 dark:border-gray-700">
                                 <option value="">Todos (Editor)</option>
                                 @foreach(($users ?? []) as $u)
                                     <option value="{{ $u->id }}" {{ $selectedEditor == $u->id ? 'selected' : '' }}>{{ $u->name }}</option>

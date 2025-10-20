@@ -29,7 +29,7 @@
             </tr>
         </thead>
         <tbody>
-            @forelse($pedidos as $fild)
+            @forelse($pedidos as $pedido)
                 <tr>
                     <td>{{ $pedido->id }}</td>
                     <td>{{ $pedido->name ?? ($pedido->cliente->name ?? '—') }}</td>

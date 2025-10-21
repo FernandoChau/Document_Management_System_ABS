@@ -70,7 +70,7 @@ class FileController extends Controller
                 $path = Storage::disk('wasabi')->putFileAs('uploads', $fileRequest, $fileName, ['visibility' => 'private']);
 
                 $file = new File();
-                $file->name = $fileName;
+                $file->name = pathinfo($fileRequest->getClientOriginalName(), PATHINFO_FILENAME) . '.' . $fileRequestExt;
                 $file->file_ref = $fileRef;
                 $file->extension = $fileRequestExt;
                 $file->size = $fileSize;
@@ -168,7 +168,7 @@ class FileController extends Controller
 
         return response()->streamDownload(function () use ($file) {
             echo Storage::disk('wasabi')->get($file->path);
-        }, $file->name);
+        }, $file->file_ref. '.' . $file->name);
     }
 
     public function preview($id)

@@ -4,9 +4,14 @@
     <meta charset="utf-8">
     <title>Relatório Mensal - {{ $inicioMes->format('F Y') }}</title>
     <style>
+        .date{font-style: italic;font-size: 10pt;}
+        .name
+        {
+            
+        }
         body { font-family: DejaVu Sans, sans-serif; font-size: 12px; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left;}
         th { background: #f2f2f2; }
         h1, h4 { margin: 0; padding: 0; }
         .meta { margin-top: 8px; font-size: 11px; color: #555; }
@@ -21,21 +26,23 @@
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Cliente</th>
-                <th>Valor</th>
-                <th>Data</th>
+                <th>#</th>
+                <th>Criado em</th>
+                <th>Referência</th>
+                <th>Nome</th>
+                <th>Criado Por</th>
                 <!-- Adiciona colunas conforme o teu modelo -->
             </tr>
         </thead>
         <tbody>
+            @php $i = 1;@endphp
             @forelse($pedidos as $pedido)
                 <tr>
-                    <td>{{ $pedido->id }}</td>
-                    <td>{{ $pedido->name ?? ($pedido->cliente->name ?? '—') }}</td>
-                    <td> Ola </td>
-                    <!-- <td>{{ number_format($pedido->valor ?? 0, 2, ',', '.') }}</td> -->
-                    <td>{{ $pedido->created_at->format('d/m/Y') }}</td>
+                    <td class="id">{{ $i++ }}</td>
+                    <td class="date">{{ $pedido->created_at->format('d/m/Y') }}</td>
+                    <td>{{ $pedido->file_ref}}</td>
+                    <td class="name">{{ $pedido->name }}</td>
+                    <td> {{ $pedido->creator->name }} </td>
                 </tr>
             @empty
                 <tr>

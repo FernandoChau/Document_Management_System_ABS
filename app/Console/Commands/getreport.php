@@ -54,7 +54,7 @@ class getreport extends Command
         $this->info("Enviando o Relatório por email.");
 
          try {
-            $adminEmail = config('mail.admin_address', env('ADMIN_EMAIL')); // define em .env ADMIN_EMAIL=...
+            $adminEmail = config('mail.admin_address', env('MAIL_USERNAME')); // define em .env ADMIN_EMAIL=...
             if ($adminEmail) {
                 // Use Mail::raw to send a plain text body (compatible with Symfony Mime API)
                 $filePath = storage_path( $path . $nome);

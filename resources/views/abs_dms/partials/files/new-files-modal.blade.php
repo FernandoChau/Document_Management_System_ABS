@@ -18,7 +18,7 @@
         Novos Ficheiros
       </h4>
       <p class="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-        Os Ficheiros carregados nesse campo serão enviados para a pasta selecionada.
+        Os Ficheiros carregados nesse campo serão enviados para a pasta em que se encontra.
       </p>
     </div>
     <form class="flex flex-col" action="{{ route('files.store') }}" enctype="multipart/form-data" method="POST">

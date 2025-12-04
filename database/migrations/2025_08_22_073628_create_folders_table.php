@@ -31,6 +31,9 @@ return new class extends Migration {
             $table->timestamp('expires_at')->nullable();    
             $table->timestamps();
 
+            $table->unique('id');
+            $table->unique(['name', 'parent_id'], 'unique_name_parent');
+
             $table->foreign('created_by')
                 ->references('id')
                 ->on('users')
@@ -40,10 +43,6 @@ return new class extends Migration {
                 ->references('id')
                 ->on('folders')
                 ->onDelete('cascade');
-        });
-
-        Schema::table('folders', function (Blueprint $table) {
-            $table->unique(['name', 'parent_id'], 'unique_name_parent');
         });
     }
 

@@ -30,6 +30,13 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone',
+        'is_activated',
+        'activated_at',
+        'deactivated_at',
+        'deactivated_by',
+        'activated_by',
+        'created_by',
     ];
 
     /**
@@ -65,4 +72,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+    
+    public function activator()
+    {
+        return $this->belongsTo(User::class, 'activated_by');
+    }
+
+    public function deactivator()
+    {
+        return $this->belongsTo(User::class, 'deactivated_by');
+    }
+    
 }

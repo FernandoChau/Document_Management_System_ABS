@@ -1,61 +1,161 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 📌 Projeto Laravel 12
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Este projeto foi desenvolvido em **Laravel 12** com integração de **TailwindCSS v4** e suporte a armazenamento em **S3 (Wasabi/AWS)** via `league/flysystem-aws-s3-v3`.
 
-## About Laravel
+O objetivo deste README é instruir como configurar o ambiente, instalar as dependências e rodar o projeto localmente.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## 🚀 Tecnologias Utilizadas
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- [Laravel 12](https://laravel.com/)
+- [Composer 2.8.10](https://getcomposer.org/)
+- [Node.js v22.17.1](https://nodejs.org/)
+- [npm 10.9.2](https://www.npmjs.com/)
+- [PHP 8.3.24](https://www.php.net/)
+- [XAMPP v3.3.0](https://www.apachefriends.org/) (com suporte a `zip`)
+- [MySQL](https://www.mysql.com/)
+- [TailwindCSS v4](https://tailwindcss.com/)
+- [league/flysystem-aws-s3-v3 ^3.0](https://github.com/thephpleague/flysystem-aws-s3-v3)
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 📥 Instalação
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### 1. Clone o repositório
+```bash
+git clone https://github.com/FernandoChau/Document_Management_System_ABS.git
+cd seu-projeto
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 2. Instale as dependências do PHP
+```bash
+composer install
+```
 
-## Laravel Sponsors
+### 3. Instale as dependências do Node.js
+```bash
+npm install
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 4. Copie o arquivo `.env.example` para `.env`
+```bash
+cp .env.example .env
+```
 
-### Premium Partners
+Edite as variáveis de ambiente de acordo com o seu setup (banco de dados, email, storage, etc).
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+---
 
-## Contributing
+## ⚙️ Configuração do Ambiente
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Banco de Dados (MySQL)
+No arquivo `.env`, configure:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=nome_do_banco
+DB_USERNAME=seu_usuario
+DB_PASSWORD=sua_senha
+```
 
-## Code of Conduct
+Rodar migrações + seed:
+```bash
+php artisan migrate:fresh --seed
+```
+para criar a base de dados incluíndo as tabelas e os dados.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### TailwindCSS
+Rodar o build do Tailwind:
+```bash
+npm run dev
+```
+---
 
-## Security Vulnerabilities
+## ☁️ Wasabi (S3 kompatível) — Obter chaves e configurar
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 1) Criar conta e bucket no Wasabi
+1. Crie uma conta em https://wasabi.com/ e aceda ao **Management Console**.
+2. No console, vá em **Buckets** → **Create Bucket** e crie um bucket novo com um nome DNS-compliant e escolha a região desejada.
 
-## License
+### 2) Gerar Access Key e Secret Key
+1. No console do Wasabi, vá em **Users** ou **Access Keys**.
+2. Clique em **Create User** (se quiseres um usuário específico) e depois em **Create Access Key**, ou diretamente em **Create New Access Key**.  
+3. Copia o **Access Key** e o **Secret Key** e guarda-os num local seguro.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 3) Endpoints / Service URLs
+- Para a região **US East (padrão)** o endpoint base é `s3.wasabisys.com`.  
+- Para outras regiões usa: `s3.<region>.wasabisys.com` (e.g. `s3.eu-central-1.wasabisys.com`).  
+
+---
+
+## 🔐 Configurar Laravel (.env)
+
+Edite o ficheiro `.env` e adicione:
+
+### Configuração de Storage (Wasabi)
+```env
+FILESYSTEM_DRIVER=wasabi
+AWS_ACCESS_KEY_ID=seu_access_key
+AWS_SECRET_ACCESS_KEY=seu_secret_key
+AWS_BUCKET=nome-do-bucket
+AWS_DEFAULT_REGION=us-east-1              
+WASABI_ENDPOINT=https://s3.us-east-1.wasabisys.com
+WASABI_URL=https://s3.us-east-1.wasabisys.com/nome-do-bucket
+AWS_URL=https://s3.wasabisys.com
+AWS_USE_PATH_STYLE_ENDPOINT=false
+```
+
+### Configuração de Email
+```env
+MAIL_MAILER=smtp
+MAIL_SCHEME=null
+MAIL_HOST=smtp.gmail.com                    // Seu servidor de email
+MAIL_PORT=587                               // Porta
+MAIL_USERNAME=seu_emaul@gmail.com           // UserName
+MAIL_PASSWORD=sua_senha_de_aplicativo       // Password
+MAIL_FROM_ADDRESS="seu_email@gmail.com"     // Email de envio
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+> ⚠️ **Importante:** se for usar Gmail, ative a autenticação em 2 passos e crie uma **App Password** para usar como `MAIL_PASSWORD`.
+
+---
+
+---
+
+## ▶️ Rodando o Servidor
+
+### Servidor Laravel
+```bash
+php artisan serve
+```
+
+A aplicação estará disponível em:  
+👉 [http://localhost:8000](http://localhost:8000)
+
+### Servidor XAMPP (Apache + MySQL)
+- Inicie **Apache** e **MySQL** no painel do XAMPP.
+- Certifique-se de que o PHP e MySQL estão ativos.
+
+---
+
+## 📦 Scripts Úteis
+
+- Limpar cache:
+```bash
+php artisan cache:clear
+php artisan config:clear
+```
+
+- Rodar migrações + seed:
+```bash
+php artisan migrate:fresh --seed
+```
+
+- Compilar assets (Tailwind + JS):
+```bash
+npm run build
+```
+

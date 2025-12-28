@@ -11,22 +11,28 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('folders', function (Blueprint $table) {
-            $table->uuid('id')->primary(); // UUID como chave primária
+
+            $table->uuid('id')->primary(); 
             $table->string('name');
-            $table->string('link')->nullable();
-            $table->uuid('parent_id')->nullable(); // UUID para parent_id
+            $table->string('folder_ref');
+            $table->uuid('parent_id')->nullable(); 
             $table->enum('tag', ['Important', 'Relevant', 'Optional'])->default('Optional');
+            $table->string('link')->nullable();
+            
+            $table->boolean('is_accessible')->default(true);
+            $table->boolean('is_removable')->default(true);
+            $table->boolean('is_public')->default(false);
+            
             $table->foreignId('created_by')->nullable();
             $table->foreignId('deleted_by')->nullable();
             $table->foreignId('updated_by')->nullable();
-            $table->boolean('is_accessible')->default(true);
-            $table->boolean('is_removable')->default(true);
-            $table->boolean('is_removed')->default(false);
-            $table->boolean('is_public')->default(false);
-            // $table->boolean('is_removed')->default(false);
+            
             $table->timestamp('deleted_at')->nullable();
             $table->timestamp('expires_at')->nullable();    
             $table->timestamps();
+
+            $table->unique('id');
+            $table->unique(['name', 'parent_id'], 'unique_name_parent');
 
             $table->foreign('created_by')
                 ->references('id')
@@ -37,10 +43,6 @@ return new class extends Migration {
                 ->references('id')
                 ->on('folders')
                 ->onDelete('cascade');
-        });
-
-        Schema::table('folders', function (Blueprint $table) {
-            $table->unique(['name', 'parent_id'], 'unique_name_parent');
         });
     }
 

@@ -78,20 +78,26 @@ class ShareController extends Controller
         $link->increment('downloads_count');
 
         if ($shareable instanceof File) {
-            // ajuste o disk se usar S3: Storage::disk('s3')->download(...)
-            $fullPath = public_path( $shareable->path);
+            // 1. Busca o conteúdo do ficheiro no Wasabi
+            $content = Storage::disk('wasabi')->get($shareable->path);
 
-            // dd($shareable);
+            // 2. Cria caminho temporário local
+            $tempDir = storage_path('app/temp_zip');
+            if (!file_exists($tempDir)) {
+                mkdir($tempDir, 0777, true);
+            }
+
+            // 3. Salva o ficheiro temporariamente
+            $tempFilePath = $tempDir . '/' . $shareable->name;
+            file_put_contents($tempFilePath, $content);
+
+            $fullPath = $tempFilePath;
 
             if (!file_exists($fullPath)) {
                 abort(404, 'Ficheiro não encontrado');
             }
 
-            $name = $shareable->name;
-            if ($shareable->extension) 
-                return response()->file($fullPath);
-            
-            return response()->download($fullPath, $name);
+            return response()->streamDownload(function() use ($shareable) { echo Storage::disk('wasabi')->get($shareable->path); }, $shareable->name);
         }
 
         if ($shareable instanceof Folder) {

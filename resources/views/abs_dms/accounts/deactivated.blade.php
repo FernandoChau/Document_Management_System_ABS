@@ -11,9 +11,8 @@
 </head>
 
 <body
-    x-data="{ page: 'account_index', 'loaded': true, 'darkMode': false, 'stickyMenu': false, 'sidebarToggle': true, 'scrollTop': false, 
-        'isDeactivationUserModal':false, 'deactivateUserData': {id:'', name:'', email:''},
-        'isAddNewFileModal': false,
+    x-data="{ page: 'account_index', 'loaded': true, 'darkMode': false, 'stickyMenu': false, 'sidebarToggle': true, 'scrollTop': false,
+        'isActivateUserModal': false, 'activateUserData':{id: '', name: '', email: ''},
     }"
     x-init="
          darkMode = JSON.parse(localStorage.getItem('darkMode'));
@@ -48,7 +47,7 @@
             <main class="flex flex-col h-full w-full overflow-auto ">
                 <div
                     class="flex w-full px-4 items-center justify-between h-8.5 border-gray-200 bg-white lg:border-b dark:border-gray-800 dark:bg-gray-900 text-gray-800 dark:text-white/90">
-
+                    
                     <div class="w-1/2 flex items-center gap-3">
                         <nav>
                             <ol class="flex items-center gap-1.5">
@@ -56,8 +55,18 @@
                                     <a class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400"
                                         href="{{ route('user.index') }}">
                                         Contas de Utilizador
+                                            <svg class="stroke-current" width="15" height="25" viewBox="0 0 17 16"
+                                                fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <path d="M6.0765 12.667L10.2432 8.50033L6.0765 4.33366" stroke=""
+                                                    stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
                                     </a>
                                 </li>
+
+                                        <li class="inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                            <a href="{{ route('user.deactivated') }}">Contas Desativadas</a>
+                                        </li>
+   
                             </ol>
                         </nav>
                     </div>
@@ -116,21 +125,6 @@
                                             <div
                                                 class="flex items-center justify-between text-gray-500 dark:text-gray-400">
                                                 <p class="font-medium text-theme-xs">
-                                                    Role
-                                                </p>
-
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                                    stroke-width="2" stroke="currentColor" class="size-2.5">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        d="M3 7.5 7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
-                                                </svg>
-                                            </div>
-                                        </th>
-                                        <th
-                                            class="px-3 sm:px-6 cursor-pointer hover:bg-gray-100 hover:dark:bg-gray-800">
-                                            <div
-                                                class="flex items-center justify-between text-gray-500 dark:text-gray-400">
-                                                <p class="font-medium text-theme-xs">
                                                     Email
                                                 </p>
 
@@ -161,7 +155,7 @@
                                             <div
                                                 class="flex items-center justify-between text-gray-500 dark:text-gray-400">
                                                 <p class="font-medium text-theme-xs ">
-                                                    Criado Por
+                                                    Desativado em
                                                 </p>
 
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -176,7 +170,7 @@
                                             <div
                                                 class="flex items-center justify-between text-gray-500 dark:text-gray-400">
                                                 <p class="font-medium text-theme-xs ">
-                                                    Existe desde
+                                                    Desativado Por
                                                 </p>
 
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -221,18 +215,6 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-5 py-2 flex justify-end sm:px-6">
-                                            <span
-                                                class="flex items-center w-fit justify-center gap-1 rounded-full bg-brand-500/5 border border-brand-500 text-theme-sm  py-0.5 pl-2 pr-2.5 font-medium text-brand-500">
-                                                    
-                                                @if ($user->role === 'admin')
-                                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-4">
-                                                        <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
-                                                    </svg>
-                                                @endif
-                                                {{ $user->role === 'admin' ? 'Administrador' : 'Utilizador' }}
-                                            </span>
-                                        </td>
                                         <td class="px-5 py-2 sm:px-6">
                                             <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
@@ -258,43 +240,33 @@
                                         </td>
                                         <td class="px-5 py-2 sm:px-6">
                                             <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                                                <div
-                                                    class="h-7 w-7  flex items-center justify-center rounded-full bg-gray-300 dark:bg-gray-800">
-                                                    <p class="text-gray-500 text-xs dark:text-gray-400">
-                                                        {{ Str::of($user->creator->name)->trim()->explode(' ')->map(fn($part) => $part[0])->take(2)->join('') }}
-                                                    </p>
-                                                </div>
-                                                <p
-                                                    class=" whitespace-nowrap text-gray-500 text-theme-sm dark:text-gray-400">
-                                                    {{ $user->creator->name }}
-                                                </p>
-                                            </div>
-                                        </td>
-                                        <td class="px-5 py-2 sm:px-6">
-                                            <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008ZM9.75 15h.008v.008H9.75V15Zm0 2.25h.008v.008H9.75v-.008ZM7.5 15h.008v.008H7.5V15Zm0 2.25h.008v.008H7.5v-.008Zm6.75-4.5h.008v.008h-.008v-.008Zm0 2.25h.008v.008h-.008V15Zm0 2.25h.008v.008h-.008v-.008Zm2.25-4.5h.008v.008H16.5v-.008Zm0 2.25h.008v.008H16.5V15Z" />
                                                 </svg>
 
                                                 <p class=" text-theme-sm italic mt-1">
-                                                    {{ $user->created_at->format('d/m/y - H:i') }}
+                                                    {{-- {{ $user->deactivated_at->format('d/m/y - H:i') }} --}}
+                                                    {{ $user->deactivated_at }}
+                                                </p>
+                                            </div>
+                                        </td>
+                                        <td class="px-5 py-2 sm:px-6">
+                                            <div class="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                                                <div
+                                                    class="h-7 w-7  flex items-center justify-center rounded-full bg-gray-300 dark:bg-gray-800">
+                                                    <p class="text-gray-500 text-xs dark:text-gray-400">
+                                                        {{ Str::of($user->deactivator->name)->trim()->explode(' ')->map(fn($part) => $part[0])->take(2)->join('') }}
+                                                    </p>
+                                                </div>
+                                                <p
+                                                    class=" whitespace-nowrap text-gray-500 text-theme-sm dark:text-gray-400">
+                                                    {{ $user->deactivator->name }}
                                                 </p>
                                             </div>
                                         </td>
                                         <td class="px-5 py-2 sm:px-6">
                                             <div
                                                 class="flex items-center justify-center gap-1.5 text-gray-500 text-theme-sm dark:text-gray-400">
-                                                <div
-                                                    class="h-7 w-7 flex items-center justify-center rounded-full hover:cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-800">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none"
-                                                        viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                        class="size-4">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                                    </svg>
-                                                </div>
 
                                                 <div
                                                     class="h-7 w-7 flex items-center justify-center rounded-full hover:cursor-pointer hover:bg-gray-300 dark:hover:bg-gray-800">
@@ -308,8 +280,8 @@
 
                                                 <button
                                                     @click="
-                                                        isDeactivationUserModal = true;
-                                                        deactivateUserData = {
+                                                        isActivateUserModal = true;
+                                                        activateUserData = {
                                                             id: $el.dataset.userId,
                                                             name: $el.dataset.userName,
                                                             email: $el.dataset.userEmail,
@@ -318,11 +290,14 @@
                                                     data-user-id="{{ $user->id }}"
                                                     data-user-name="{{ $user->name }}"
                                                     data-user-email="{{ $user->email }}"
-
-                                                    class="h-7 w-7 flex items-center justify-center rounded-full hover:bg-red-500 hover:cursor-pointer hover:text-white dark:hover:bg-red-500 dark:hover:text-white">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="size-4">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M22 10.5h-6m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0ZM4 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 10.374 21c-2.331 0-4.512-.645-6.374-1.766Z" />
+                                                    class="h-7 gap-2 px-2.5 flex items-center justify-center rounded-full text-white bg-brand-500 active:bg-brand-600 hover:cursor-pointer hover:text-white dark:hover:bg-brand-500 dark:hover:text-white dark:active:bg-brand-600">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-4">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
                                                     </svg>
+
+                                                    <p class="h-fit">
+                                                        Ativar 
+                                                    </p>
                                                 </button>
                                             </div>
                                         </td>
@@ -338,8 +313,8 @@
         <!-- ===== Content Area End ===== -->
     </div>
     <!-- ===== Page Wrapper End ===== -->
-    @include('abs_dms.partials.account.user-deactivation-modal')
-    @include('abs_dms.partials.account.new-user-modal')
+
+    @include('abs_dms.partials.account.user-activation-modal')
 </body>
 
 </html>

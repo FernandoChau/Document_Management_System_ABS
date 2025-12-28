@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Folder;
+use App\Services\FolderZipper;
 use Illuminate\Http\Request;
 
 class FolderController extends Controller
@@ -19,20 +20,22 @@ class FolderController extends Controller
     }
 
     public function store(Request $request)
-    {   
+    {
 
-        
-        //validate
         $request->validate([
             'name' => 'required|string|max:255|',
+            'folder_reference' => 'required|string|max:3',
             'parent_id' => 'nullable|uuid',
             'tag' => 'nullable|in:Important,Relevant,Optional',
             'is_accessible' => 'boolean',
             'is_removable' => 'boolean',
-        ],[
+        ], [
             'name.required' => 'O campo nome não pode ser nulo',
             'name.string' => 'O nome da pasta deve ser uma string',
             'name.max' => 'O nome da pasta não pode ter mais de 255 caracteres',
+            'folder_reference.required' => 'O campo "Ref. da pasta" não pode ser nulo',
+            'folder_reference.string' => 'O "Ref. da pasta" da pasta deve ser uma string',
+            'folder_reference.max' => 'O "Ref. da pasta" da pasta não pode ter mais de 3 caracteres',
             'parent_id.uuid' => 'Selecione um diretório válido',
             'tag.in' => 'A tag da pasta deve ser uma das seguintes: Importante, Relevante, Opcional',
             'created_by.required' => 'O ID do criador é obrigatório',
@@ -40,8 +43,15 @@ class FolderController extends Controller
             'is_removable.boolean' => 'O campo de remoção deve ser verdadeiro ou falso',
         ]);
 
+        $folder_ref = $request->parent_id !== null ? 
+        Folder::find($request->parent_id)->folder_ref . '.' . strtoupper($request->folder_reference):
+        $request->folder_reference;
+
+        dd(request()->all(),$folder_ref);
+
         $folder = Folder::create([
             'name' => $request->name,
+            'folder_ref' => $folder_ref,
             'parent_id' => $request->parent_id,
             'tag' => 'Optional',
             'is_accessible' => $request->is_accessible ?? true,
@@ -50,8 +60,8 @@ class FolderController extends Controller
         ]);
 
 
-        
-        if (!$folder) 
+
+        if (!$folder)
             return redirect()->back()->with('error', 'Falha ao atualizar pasta.');
 
         return redirect()->back()->with('success', 'Pasta criada com sucesso.');
@@ -87,7 +97,7 @@ class FolderController extends Controller
 
             'is_accessible' => 'boolean',
             'is_removable' => 'boolean',
-        ],[
+        ], [
             'name.required' => 'O campo nome não pode ser nulo',
             'name.string' => 'O nome da pasta deve ser uma string',
             'name.max' => 'O nome da pasta não pode ter mais de 255 caracteres',
@@ -106,8 +116,8 @@ class FolderController extends Controller
             'is_accessible' => $request->is_accessible ? true : false,
             'is_removable' => $request->is_removable ? true : false,
         ]);
-        
-        if (!$folder) 
+
+        if (!$folder)
             return redirect()->back()->with('error', 'Falha ao atualizar pasta.');
 
         return redirect()->back()->with('success', 'Pasta atualizada com sucesso.');
@@ -125,7 +135,7 @@ class FolderController extends Controller
             'tag' => 'in:Important,Relevant,Optional',
             'is_accessible' => 'boolean',
             'is_removable' => 'boolean',
-        ],[
+        ], [
             'name.required' => 'O campo nome não pode ser nulo',
             'name.string' => 'O nome da pasta deve ser uma string',
             'name.max' => 'O nome da pasta não pode ter mais de 255 caracteres',
@@ -140,8 +150,8 @@ class FolderController extends Controller
             'is_accessible' => $request->is_accessible ? true : false,
             'is_removable' => $request->is_removable ? true : false,
         ]);
-        
-        if (!$folder) 
+
+        if (!$folder)
             return redirect()->route('dashboard')->with('error', 'Falha ao atualizar pasta.');
 
         return redirect()->route('dashboard')->with('success', 'Pasta atualizada com sucesso.');
@@ -164,5 +174,12 @@ class FolderController extends Controller
         }
         $folder->delete();
         return redirect()->back()->with('success', 'Pasta excluída com sucesso.');
+    }
+
+    public function download($id, FolderZipper $zipper)
+    {
+        $folder = Folder::findOrFail($id);
+        return $zipper->downloadZip($folder, $folder->name);
+        // return redirect()->back()->with('success','Download iniciado com sucesso.');
     }
 }

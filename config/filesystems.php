@@ -41,7 +41,7 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL') . '/storage',
+            'url' => rtrim(env('APP_URL'), '/').'/storage',
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
@@ -59,19 +59,6 @@ return [
             'throw' => false,
             'report' => false,
         ],
-
-        'wasabi' => [
-            'driver' => 's3',
-            'key' => env('WASABI_KEY'),
-            'secret' => env('WASABI_SECRET'),
-            'region' => env('WASABI_REGION'),
-            'bucket' => env('WASABI_BUCKET'),
-            'endpoint' => env('WASABI_ENDPOINT'),
-            'use_path_style_endpoint' => env('WASABI_USE_PATH_STYLE_ENDPOINT', false),
-            'url' => env('WASABI_URL'), // opcional — útil se tiveres CDN/CNAME
-            'throw' => false,
-        ],
-
 
     ],
 

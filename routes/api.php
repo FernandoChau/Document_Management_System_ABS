@@ -1,10 +1,10 @@
 <?php
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/teste', function () {
-    return response()->json([
-        'mensagem' => 'API a funcionar!'
-    ]);
-});
-  
+Route::get('/user', function (Request $request) {
+    return $request->user();
+    // return response()->json("ola mundo");
+    // return view('welcome');
+})->middleware('auth:sanctum');

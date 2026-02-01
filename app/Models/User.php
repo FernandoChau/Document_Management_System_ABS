@@ -62,4 +62,46 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Relationship: User belongs to many groups
+     */
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class, 'group_members', 'user_id', 'group_id')
+            ->withTimestamps()
+            ->withPivot('joined_at');
+    }
+
+    /**
+     * Relationship: User has many folder permissions
+     */
+    public function folderPermissions()
+    {
+        return $this->hasMany(FolderPermission::class);
+    }
+
+    /**
+     * Relationship: User has many document permissions
+     */
+    public function documentPermissions()
+    {
+        return $this->hasMany(DocumentPermission::class);
+    }
+
+    /**
+     * Relationship: User is responsible for many folders
+     */
+    public function responsibleFolders()
+    {
+        return $this->hasMany(FolderResponsible::class)->where('is_owner', true);
+    }
+
+    /**
+     * Check if user is admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
 }

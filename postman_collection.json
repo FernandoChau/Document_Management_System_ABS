@@ -1,0 +1,320 @@
+{
+  "info": {
+    "name": "Document Management System API",
+    "description": "Testes para as rotas de Pastas (Folders) e Documentos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Autenticação",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('token', jsonData.token);",
+                  "    console.log('Token salvo:', jsonData.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"user@example.com\",\"password\":\"password123\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/entrar",
+              "host": ["{{base_url}}"],
+              "path": ["entrar"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pastas (Folders)",
+      "item": [
+        {
+          "name": "Listar Pastas Raiz",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pastas",
+              "host": ["{{base_url}}"],
+              "path": ["pastas"]
+            }
+          }
+        },
+        {
+          "name": "Ver Pasta com Subpastas e Documentos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pastas?parent_id=FOLDER_ID",
+              "host": ["{{base_url}}"],
+              "path": ["pastas"],
+              "query": [
+                {
+                  "key": "parent_id",
+                  "value": "FOLDER_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Criar Pasta Raiz",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('root_folder_id', jsonData.id);",
+                  "    console.log('Pasta raiz criada:', jsonData.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Pasta Teste {{$timestamp}}\",\"department_id\":\"DEPT_ID\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/pastas",
+              "host": ["{{base_url}}"],
+              "path": ["pastas"]
+            }
+          }
+        },
+        {
+          "name": "Criar Subpasta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set('child_folder_id', jsonData.id);",
+                  "    console.log('Subpasta criada:', jsonData.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Subpasta Teste {{$timestamp}}\",\"parent_id\":\"{{root_folder_id}}\"}"
+            },
+            "url": {
+              "raw": "{{base_url}}/pastas",
+              "host": ["{{base_url}}"],
+              "path": ["pastas"]
+            }
+          }
+        },
+        {
+          "name": "Baixar Pasta como ZIP",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pastas/{{root_folder_id}}/baixar",
+              "host": ["{{base_url}}"],
+              "path": ["pastas", "{{root_folder_id}}", "baixar"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documentos (Documents)",
+      "item": [
+        {
+          "name": "Fazer Upload de Documento(s)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.documents && jsonData.documents.length > 0) {",
+                  "        pm.environment.set('document_id', jsonData.documents[0].id);",
+                  "        console.log('Documento enviado:', jsonData.documents[0].id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "/path/to/documento1.pdf"
+                },
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "/path/to/documento2.xlsx"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/pastas/{{child_folder_id}}/upload",
+              "host": ["{{base_url}}"],
+              "path": ["pastas", "{{child_folder_id}}", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Ver Documento (com conteúdo extraído)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos/{{document_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["documentos", "{{document_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Baixar Documento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos/{{document_id}}/baixar",
+              "host": ["{{base_url}}"],
+              "path": ["documentos", "{{document_id}}", "baixar"]
+            }
+          }
+        },
+        {
+          "name": "Deletar Documento (Soft Delete)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/documentos/{{document_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["documentos", "{{document_id}}"]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "root_folder_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "child_folder_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "document_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

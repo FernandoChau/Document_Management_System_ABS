@@ -19,6 +19,18 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         // Validação e criação via Fortify
+        
+        $request->validate([
+                'email' => 'required|email|ends_with:@abspro.co.mz|max:255'
+            ],
+            [
+            'email.required' => 'O e-mail é obrigatório.',
+            'email.email' => 'Informe um endereço de e-mail válido.',
+            'email.ends_with' => 'O e-mail deve terminar com @abspro.co.mz.',
+            'email.exists' => 'Este e-mail não está registado no sistema.',
+            'email.max' => 'O e-mail não pode ter mais de 255 caracteres.',
+        ]);
+
         $user = $this->creator->create($request->all());
 
         return response()->json([

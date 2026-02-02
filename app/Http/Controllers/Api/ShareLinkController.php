@@ -7,12 +7,20 @@ use App\Models\ShareLink;
 use App\Models\Document;
 use App\Models\Folder;
 use App\Services\AuditLogger;
+use App\Services\FolderZipService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Gate;
 use Carbon\Carbon;
 
 class ShareLinkController extends Controller
 {
+    protected $folderZipService;
+
+    public function __construct(FolderZipService $folderZipService)
+    {
+        $this->folderZipService = $folderZipService;
+    }
     /**
      * Listar links de compartilhamento do usuário
      */
@@ -44,14 +52,9 @@ class ShareLinkController extends Controller
         $resourceClass = "App\\Models\\" . $request->shareable_type;
         $resource = $resourceClass::findOrFail($request->shareable_id);
 
-        // Verificar se é documento ou pasta
-        if ($request->shareable_type === 'Document') {
-            // Assumir que o usuário tem permissão (implementar policy depois)
-            $this->authorize('view', $resource);
-            } elseif ($request->shareable_type === 'Folder') {
-            // dd('here');
-            // Assumir que o usuário tem permissão
-            $this->authorize('view', $resource);
+        // Check authorization
+        if (!Gate::allows('view', $resource)) {
+            return response()->json(['error' => 'Forbidden'], 403);
         }
 
         $expiresAt = null;
@@ -141,8 +144,14 @@ class ShareLinkController extends Controller
             return response()->json(['message' => 'Invalid password'], 403);
         }
 
+        // Download de documento
         if ($shareLink->shareable_type === 'Document') {
             $document = Document::findOrFail($shareLink->shareable_id);
+
+            // Verificar se o arquivo existe
+            if (!file_exists(storage_path('app/private/' . $document->file_path))) {
+                return response()->json(['error' => 'File not found'], 404);
+            }
 
             // Incrementar contador de downloads
             $shareLink->increment('downloads_count');
@@ -152,10 +161,47 @@ class ShareLinkController extends Controller
                 'ip' => $request->ip(),
             ]);
 
-            return response()->download(storage_path('app/' . $document->file_path), $document->name);
+            return response()->download(
+                storage_path('app/private/' . $document->file_path),
+                $document->name,
+                ['Content-Type' => $document->mime_type]
+            );
         }
 
-        return response()->json(['message' => 'Folder download not yet implemented'], 501);
+        // Download de pasta como ZIP
+        if ($shareLink->shareable_type === 'Folder') {
+            try {
+                $folder = Folder::findOrFail($shareLink->shareable_id);
+
+                // Criar arquivo ZIP
+                $zipPath = $this->folderZipService->createZip($folder);
+                $zipFileName = $this->folderZipService->getZipDownloadName($folder);
+
+                // Verificar se arquivo foi criado
+                if (!file_exists($zipPath)) {
+                    return response()->json(['error' => 'Arquivo ZIP não foi criado'], 500);
+                }
+
+                // Incrementar contador de downloads
+                $shareLink->increment('downloads_count');
+
+                AuditLogger::log(null, 'DOWNLOAD', $folder, [
+                    'via_share_link' => $shareLink->id,
+                    'ip' => $request->ip(),
+                    'type' => 'zip',
+                ]);
+
+                // Retornar o arquivo para download
+                return response()->download($zipPath, $zipFileName, [
+                    'Content-Type' => 'application/zip',
+                    'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"',
+                ]);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Não foi possível criar o arquivo ZIP: ' . $e->getMessage()], 500);
+            }
+        }
+
+        return response()->json(['message' => 'Invalid share link type'], 400);
     }
 
     /**

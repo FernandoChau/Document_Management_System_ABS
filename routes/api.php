@@ -31,6 +31,9 @@ Route::prefix('/')->group(function () {
     Route::post('/recuperar-senha', [PasswordController::class, 'forgot']); //checked
     Route::post('/redefinir-senha', [PasswordController::class, 'reset']);  //checked
 
+    Route::get('/compartilhamentos/{token}', [ShareLinkController::class, 'show']);
+    Route::get('/compartilhamentos/{token}/baixar', [ShareLinkController::class, 'download']);
+
     //Authetication Required
     Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/sair', [LogoutController::class, 'logout']);                                  //checked
@@ -93,6 +96,7 @@ Route::prefix('/')->group(function () {
             Route::delete('/{document}', [DocumentController::class, 'destroy']); // Soft Delete
             Route::post('/{document}/restaurar', [DocumentController::class, 'restore']);
             Route::get('/{document}/estatisticas', [DocumentController::class, 'stats']);
+            Route::get('/{document}/logs', [AuditLogController::class, 'documentLogs']); // Document Audit Logs
 
             // Document Content (Extracted Text)
             Route::prefix('{document}/conteudo')->group(function () {
@@ -101,9 +105,6 @@ Route::prefix('/')->group(function () {
                 Route::delete('/', [DocumentContentController::class, 'destroy']);
                 Route::get('/status', [DocumentContentController::class, 'status']);
             });
-
-            // Document Audit Logs
-            Route::get('/{document}/logs', [AuditLogController::class, 'documentLogs']);
         });
 
         // ==================== DOCUMENT CONTENT SEARCH ====================
@@ -121,10 +122,10 @@ Route::prefix('/')->group(function () {
         // ==================== AUDIT LOGS ====================
         Route::prefix('auditoria')->group(function () {
             Route::get('/', [AuditLogController::class, 'index']);
-            Route::get('/{auditLog}', [AuditLogController::class, 'show']);
+            Route::get('/estatisticas', [AuditLogController::class, 'stats']);
             Route::get('/pasta/{folder}/logs', [AuditLogController::class, 'folderLogs']);
             Route::get('/usuario/{userId}/logs', [AuditLogController::class, 'userLogs']);
-            Route::get('/estatisticas', [AuditLogController::class, 'stats']);
+            Route::get('/{auditLog}', [AuditLogController::class, 'show']);
         });
 
         // ==================== FOLDER PERMISSIONS ====================

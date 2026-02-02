@@ -7,6 +7,9 @@ use App\Policies\FolderPolicy;
 use App\Policies\DocumentPolicy;
 use App\Models\Folder;
 use App\Models\Document;
+use App\Models\Department;
+use App\Observers\FolderObserver;
+use App\Observers\DepartmentObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,5 +33,9 @@ class AppServiceProvider extends ServiceProvider
         // Register policies
         \Illuminate\Support\Facades\Gate::policy(Folder::class, FolderPolicy::class);
         \Illuminate\Support\Facades\Gate::policy(Document::class, DocumentPolicy::class);
+
+        // Register observers for slug synchronization
+        Folder::observe(FolderObserver::class);
+        Department::observe(DepartmentObserver::class);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Support\Str;
 
 class Folder extends Model
 {
@@ -12,6 +13,7 @@ class Folder extends Model
 
     protected $fillable = [
         'name',
+        'slug',
         'parent_id',
         'department_id',
         'reference_code',
@@ -24,6 +26,26 @@ class Folder extends Model
     protected $casts = [
         'is_root' => 'boolean',
     ];
+
+    /**
+     * Boot the model
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (!$model->slug) {
+                $model->slug = Str::slug($model->name);
+            }
+        });
+
+        static::updating(function ($model) {
+            if ($model->isDirty('name')) {
+                $model->slug = Str::slug($model->name);
+            }
+        });
+    }
 
     /**
      * Relationship: Folder belongs to Department (only for root folders)

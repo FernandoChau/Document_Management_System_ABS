@@ -10,6 +10,7 @@ use App\Services\DocumentService;
 use App\Services\AuditLogger;
 use App\Services\AuthorizationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class DocumentController extends Controller
 {
@@ -67,9 +68,19 @@ class DocumentController extends Controller
         if (!$this->authorizationService->canDownloadDocument($user, $document)) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
+        // Verify file exists
+        if (!Storage::disk('local')->exists($document->file_path)) {
+            return response()->json(['error' => 'File not found'], 404);
+            // dd("here");
+        }
 
         AuditLogger::log($user, 'DOWNLOAD', $document);
-        return response()->download(storage_path('app/' . $document->file_path), $document->name);
+
+        return response()->download(
+            storage_path('app\\private\\' . $document->file_path),
+            $document->name,
+            ['Content-Type' => $document->mime_type]
+        );
     }
 
     public function destroy(Document $document)

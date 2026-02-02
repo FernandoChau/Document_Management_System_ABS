@@ -7,6 +7,7 @@ use App\Models\Folder;
 use App\Models\Department;
 use App\Models\FolderResponsible;
 use App\Services\FolderService;
+use App\Services\FolderZipService;
 use App\Services\AuditLogger;
 use App\Services\AuthorizationService;
 use Illuminate\Http\Request;
@@ -15,11 +16,13 @@ use Illuminate\Support\Facades\DB;
 class FolderController extends Controller
 {
     protected $folderService;
+    protected $folderZipService;
     protected $authorizationService;
 
-    public function __construct(FolderService $folderService, AuthorizationService $authorizationService)
+    public function __construct(FolderService $folderService, FolderZipService $folderZipService, AuthorizationService $authorizationService)
     {
         $this->folderService = $folderService;
+        $this->folderZipService = $folderZipService;
         $this->authorizationService = $authorizationService;
     }
 
@@ -107,7 +110,29 @@ class FolderController extends Controller
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
-        return response()->json(['message' => 'Zip download not implemented yet in this iteration'], 501);
+        try {
+            // Criar arquivo ZIP
+            $zipPath = $this->folderZipService->createZip($folder);
+            $zipFileName = $this->folderZipService->getZipDownloadName($folder);
+
+            // Verificar se arquivo foi criado
+            if (!file_exists($zipPath)) {
+                return response()->json(['error' => 'Arquivo ZIP não foi criado'], 500);
+            }
+
+            AuditLogger::log($user, 'DOWNLOAD', $folder, ['type' => 'zip']);
+
+            // Retornar o arquivo para download
+            $response = response()->download($zipPath, $zipFileName, [
+                'Content-Type' => 'application/zip',
+                'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"',
+            ]);
+
+            // Registrar para limpeza posterior (não deletar imediatamente)
+            return $response;
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Não foi possível criar o arquivo ZIP: ' . $e->getMessage()], 500);
+        }
     }
 
     public function show(Folder $folder)

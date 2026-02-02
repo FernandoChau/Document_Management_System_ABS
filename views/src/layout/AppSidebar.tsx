@@ -6,6 +6,7 @@ import {
   BoxCubeIcon,
   CalenderIcon,
   ChevronDownIcon,
+  FolderIcon,
   GridIcon,
   HorizontaLDots,
   ListIcon,
@@ -17,6 +18,7 @@ import {
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
+import { FolderIcon as FolderSolid } from '@heroicons/react/24/outline';
 
 type NavItem = {
   name: string;
@@ -28,8 +30,18 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
+    name: "Home",
+    path: "/home",
+  },
+  {
+    icon: <FolderSolid/>,
+    name: "Pastas",
+    path: "/pastas",
+  },
+  {
+    icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    subItems: [{ name: "Ecommerce", path: "/dashboard", pro: false }],
   },
   {
     icon: <CalenderIcon />,
@@ -292,10 +304,14 @@ const AppSidebar: React.FC = () => {
             : isHovered
             ? "w-[290px]"
             : "w-[90px]"
+
+            // ? "w-[90px]" // Cancel Sidebar expand
+            // : "w-[90px]" // Cancel Sidebar expand
         }
         ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0`}
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
+      // onMouseEnter={() => setIsHovered(false)} // Cancel Sidebar expand
       onMouseLeave={() => setIsHovered(false)}
     >
       <div

@@ -43,11 +43,12 @@ export default function SignUpForm() {
             setpassword_confirmation("");
         } catch (err: any) {
             if (err.response?.data?.errors) {
-                const firstError = Object.values(
-                    err.response.data.errors,
-                )[0][0];
+                // const firstError = Object.values(
+                //     err.response.data.errors,
+                // )[0][0];
                 
-                setError(firstError);
+                setError(err);
+                // setError(firstError);
             } else {
                 setError("Erro inesperado ao criar utilizador");
             }

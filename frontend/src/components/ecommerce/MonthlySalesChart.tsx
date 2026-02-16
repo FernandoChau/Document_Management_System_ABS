@@ -7,7 +7,7 @@ import { useState } from "react";
 
 export default function MonthlySalesChart() {
   const options: ApexOptions = {
-    colors: ["#4FB852"],
+    colors: ["#465fff"],
     chart: {
       fontFamily: "Outfit, sans-serif",
       type: "bar",

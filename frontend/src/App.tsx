@@ -4,6 +4,7 @@ import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
 import UserProfiles from "./pages/UserProfiles";
 import Videos from "./pages/UiElements/Videos";
+import Images from "./pages/UiElements/Images";
 import Alerts from "./pages/UiElements/Alerts";
 import Badges from "./pages/UiElements/Badges";
 import Avatars from "./pages/UiElements/Avatars";
@@ -18,12 +19,7 @@ import AppLayout from "./layout/AppLayout";
 import { ScrollToTop } from "./components/common/ScrollToTop";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Home from "./pages/Home/Home";
-import Pastas from "./pages/Pastas/Pastas";
-import Images from "./pages/Images/Images";
-import ImageDetail from "./pages/Images/ImageDetail";
-import AlbumDetail from "./pages/Album/AlbumDetail";
-import Reports from "./pages/Reports/Reports";
-import Users from "./pages/Users/Users";
+import Pastas from "./pages/Pastas/pastas";
 
 export default function App() {
   return (
@@ -39,14 +35,8 @@ export default function App() {
             {/* DMS DASHBOARD */}
             <Route path="/home" element={<Home />} />
 
-            {/* DMS FOLDERS */}
+            {/* DMS DASHBOARD */}
             <Route path="/pastas" element={<Pastas />} />
-
-            {/* DMS REPORTS */}
-            <Route path="/report" element={<Reports />} />
-
-            {/* DMS USER */}
-            <Route path="/users" element={<Users />} />
 
             {/* Others Page */}
             <Route path="/profile" element={<UserProfiles />} />
@@ -65,8 +55,6 @@ export default function App() {
             <Route path="/badge" element={<Badges />} />
             <Route path="/buttons" element={<Buttons />} />
             <Route path="/images" element={<Images />} />
-            <Route path="/image/:id" element={<ImageDetail />} />
-            <Route path="/album/:id" element={<AlbumDetail />} />
             <Route path="/videos" element={<Videos />} />
 
             {/* Charts */}

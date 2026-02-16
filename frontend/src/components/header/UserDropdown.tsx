@@ -17,13 +17,13 @@ export default function UserDropdown() {
     <div className="relative">
       <button
         onClick={toggleDropdown}
-        className="relative px-2 flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full dropdown-toggle hover:text-gray-700 h-11 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+        className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
-        <span className="mr-3 flex items-center justify-center overflow-hidden rounded-full h-11 w-11">
-          FC
+        <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
+          <img src="/images/user/owner.jpg" alt="User" />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">Fernando Chau</span>
+        <span className="block mr-1 font-medium text-theme-sm">Musharof</span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
@@ -51,10 +51,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            Fernando Chau
+            Musharof Chowdhury
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            fernando.chau@abspro.co.mz
+            randomuser@pimjo.com
           </span>
         </div>
 
@@ -81,10 +81,10 @@ export default function UserDropdown() {
                   fill=""
                 />
               </svg>
-              Editar Perfil
+              Edit profile
             </DropdownItem>
           </li>
-          {/* <li>
+          <li>
             <DropdownItem
               onItemClick={closeDropdown}
               tag="a"
@@ -133,7 +133,7 @@ export default function UserDropdown() {
               </svg>
               Support
             </DropdownItem>
-          </li> */}
+          </li>
         </ul>
         <Link
           to="/signin"
@@ -154,7 +154,7 @@ export default function UserDropdown() {
               fill=""
             />
           </svg>
-          Encerar Sessão
+          Sign out
         </Link>
       </Dropdown>
     </div>

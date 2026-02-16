@@ -85,13 +85,13 @@ const AppHeader: React.FC = () => {
 
           <Link to="/" className="lg:hidden">
             <img
-              className="dark:hidden h-10 w-10"
-              src="./images/logo/logo.png"
+              className="dark:hidden"
+              src="./images/logo/logo.svg"
               alt="Logo"
             />
             <img
-              className="hidden dark:block h-10 w-10"
-              src="./images/logo/logo.png"
+              className="hidden dark:block"
+              src="./images/logo/logo-dark.svg"
               alt="Logo"
             />
           </Link>
@@ -160,7 +160,7 @@ const AppHeader: React.FC = () => {
             {/* <!-- Dark Mode Toggler --> */}
             <ThemeToggleButton />
             {/* <!-- Dark Mode Toggler --> */}
-            {/* <NotificationDropdown /> */}
+            <NotificationDropdown />
             {/* <!-- Notification Menu Area --> */}
           </div>
           {/* <!-- User Area --> */}

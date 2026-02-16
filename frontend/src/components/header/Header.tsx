@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ThemeToggleButton } from "../common/ThemeToggleButton";
-// import NotificationDropdown from "./NotificationDropdown";
+import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
 import { Link } from "react-router";
 
@@ -10,7 +10,7 @@ interface HeaderProps {
   onToggle: () => void;
 }
 const Header: React.FC<HeaderProps> = ({ onClick, onToggle }) => {
-  const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(true);
+  const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
   const toggleApplicationMenu = () => {
     setApplicationMenuOpen(!isApplicationMenuOpen);
@@ -78,15 +78,15 @@ const Header: React.FC<HeaderProps> = ({ onClick, onToggle }) => {
             </svg>
           </button>
 
-          <Link to="/pastas" className="lg:hidden">
+          <Link to="/" className="lg:hidden">
             <img
-              className="dark:hidden h-10 w-10"
-              src="./images/logo/logo.png"
+              className="dark:hidden"
+              src="./images/logo/logo.svg"
               alt="Logo"
             />
             <img
-              className="hidden dark:block h-10 w-10"
-              src="./images/logo/logo.png"
+              className="hidden dark:block"
+              src="./images/logo/logo-dark.svg"
               alt="Logo"
             />
           </Link>
@@ -154,7 +154,7 @@ const Header: React.FC<HeaderProps> = ({ onClick, onToggle }) => {
             {/* <!-- Dark Mode Toggler --> */}
             <ThemeToggleButton />
             {/* <!-- Dark Mode Toggler --> */}
-            {/* <NotificationDropdown /> */}
+            <NotificationDropdown />
             {/* <!-- Notification Menu Area --> */}
           </div>
           {/* <!-- User Area --> */}

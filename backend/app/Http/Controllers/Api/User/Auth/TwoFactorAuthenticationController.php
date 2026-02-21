@@ -4,25 +4,20 @@ namespace App\Http\Controllers\Api\User\Auth;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Laravel\Fortify\Actions\DisableTwoFactorAuthentication;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
 
 class TwoFactorAuthenticationController extends Controller
 {
     /**
      * Enable two-factor authentication for the user.
-     * Gera um código QR e recovery codes para o utilizador.
+     * Gera um codigo QR e recovery codes para o utilizador.
      */
     public function enable(Request $request)
     {
-        
-        $user = $request;
-        // $user = $request->user();
+        $user = $request->user();
 
-        // dd();
-
-        // Se já tem 2FA ativado, retorna erro
-        if ($user->two_factor_secret) {
+        // Se ja tem 2FA ativado, retorna erro
+        if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('messages.two_factor_already_enabled'),
@@ -31,87 +26,54 @@ class TwoFactorAuthenticationController extends Controller
 
         $provider = app(TwoFactorAuthenticationProvider::class);
 
-        // Gera novo secret
+        // Gera novo secret e recovery codes
         $secret = $provider->generateSecretKey();
+        $recoveryCodes = $provider->generateRecoveryCodes();
+
+        $user->forceFill([
+            'two_factor_secret' => encrypt($secret),
+            'two_factor_recovery_codes' => $this->encodeRecoveryCodes($recoveryCodes),
+            'two_factor_confirmed_at' => null,
+        ])->save();
+
         $qrCode = $provider->qrCodeUrl(
             $user->name,
             $user->email,
             $secret
         );
 
-        // Gera recovery codes
-        $recoveryCodes = $provider->generateSecretKey();
-
         return response()->json([
             'status' => 'success',
             'message' => __('messages.two_factor_qr_generated'),
             'data' => [
                 'qr_code' => $qrCode,
-                'secret' => $secret,
                 'recovery_codes' => $recoveryCodes,
             ],
         ], 200);
     }
 
     /**
-     * Confirmar e guardar o secret do two-factor.
-     * O utilizador fornece um código 6-dígitos para confirmar.
+     * Confirmar e guardar o estado final do two-factor.
+     * O utilizador fornece um codigo 6-digitos para confirmar.
      */
     public function confirm(Request $request)
     {
         $request->validate([
             'code' => 'required|digits:6',
         ], [
-            'code.required' => 'O código de autenticação é obrigatório.',
-            'code.digits' => 'O código deve ter exatamente 6 dígitos.',
+            'code.required' => 'O codigo de autenticacao e obrigatorio.',
+            'code.digits' => 'O codigo deve ter exatamente 6 digitos.',
         ]);
 
         $user = $request->user();
 
-        // Se já tem 2FA ativado, retorna erro
-        if ($user->two_factor_secret) {
+        if ($user->two_factor_secret && $user->two_factor_confirmed_at) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('messages.two_factor_already_enabled'),
             ], 400);
         }
 
-        $provider = app(TwoFactorAuthenticationProvider::class);
-
-        // Valida se o código está correto
-        if (!$provider->verify(
-            decrypt($user->two_factor_secret ?? ''),
-            $request->code
-        )) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('messages.two_factor_code_invalid'),
-            ], 400);
-        }
-
-        // Guarda recovery codes
-        $recoveryCodes = $provider->generateRecoveryCodes();
-        $user->forceFill([
-            'two_factor_recovery_codes' => json_encode(
-                collect($recoveryCodes)->map(fn($code) => ['code' => $code, 'used_at' => null])->all()
-            ),
-        ])->save();
-
-        return response()->json([
-            'status' => 'success',
-            'message' => __('messages.two_factor_confirmed'),
-            'recovery_codes' => $recoveryCodes,
-        ], 200);
-    }
-
-    /**
-     * Desativar two-factor authentication.
-     */
-    public function disable(Request $request, DisableTwoFactorAuthentication $disable)
-    {
-        $user = $request->user();
-
-        // Se não tem 2FA ativado, retorna erro
         if (!$user->two_factor_secret) {
             return response()->json([
                 'status' => 'error',
@@ -119,7 +81,46 @@ class TwoFactorAuthenticationController extends Controller
             ], 400);
         }
 
-        $disable($user);
+        $provider = app(TwoFactorAuthenticationProvider::class);
+        $secret = decrypt($user->two_factor_secret);
+
+        if (!$provider->verify($secret, $request->code)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('messages.two_factor_code_invalid'),
+            ], 400);
+        }
+
+        $user->forceFill([
+            'two_factor_confirmed_at' => now(),
+        ])->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => __('messages.two_factor_confirmed'),
+            'recovery_codes' => $this->decodeRecoveryCodes($user->two_factor_recovery_codes),
+        ], 200);
+    }
+
+    /**
+     * Desativar two-factor authentication.
+     */
+    public function disable(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->two_factor_secret) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('messages.two_factor_not_enabled'),
+            ], 400);
+        }
+
+        $user->forceFill([
+            'two_factor_secret' => null,
+            'two_factor_recovery_codes' => null,
+            'two_factor_confirmed_at' => null,
+        ])->save();
 
         return response()->json([
             'status' => 'success',
@@ -136,7 +137,7 @@ class TwoFactorAuthenticationController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'two_factor_enabled' => (bool) $user->two_factor_secret,
+            'two_factor_enabled' => (bool) ($user->two_factor_secret && $user->two_factor_confirmed_at),
             'recovery_codes_count' => $user->two_factor_recovery_codes
                 ? count(json_decode($user->two_factor_recovery_codes, true))
                 : 0,
@@ -150,8 +151,7 @@ class TwoFactorAuthenticationController extends Controller
     {
         $user = $request->user();
 
-        // Se não tem 2FA ativado, retorna erro
-        if (!$user->two_factor_secret) {
+        if (!$user->two_factor_secret || !$user->two_factor_confirmed_at) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('messages.two_factor_not_enabled'),
@@ -162,9 +162,7 @@ class TwoFactorAuthenticationController extends Controller
         $recoveryCodes = $provider->generateRecoveryCodes();
 
         $user->forceFill([
-            'two_factor_recovery_codes' => json_encode(
-                collect($recoveryCodes)->map(fn($code) => ['code' => $code, 'used_at' => null])->all()
-            ),
+            'two_factor_recovery_codes' => $this->encodeRecoveryCodes($recoveryCodes),
         ])->save();
 
         return response()->json([
@@ -175,20 +173,19 @@ class TwoFactorAuthenticationController extends Controller
     }
 
     /**
-     * Verificar código de dois fatores durante login.
-     * Este método é chamado quando o utilizador tem 2FA e precisa confirmar.
+     * Verificar codigo de dois fatores durante login/acoes sensiveis.
      */
     public function verify(Request $request)
     {
         $request->validate([
             'code' => 'required|string',
         ], [
-            'code.required' => 'O código de autenticação é obrigatório.',
+            'code.required' => 'O codigo de autenticacao e obrigatorio.',
         ]);
 
         $user = $request->user();
 
-        if (!$user->two_factor_secret) {
+        if (!$user->two_factor_secret || !$user->two_factor_confirmed_at) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('messages.two_factor_not_enabled'),
@@ -198,12 +195,9 @@ class TwoFactorAuthenticationController extends Controller
         $provider = app(TwoFactorAuthenticationProvider::class);
         $code = $request->code;
 
-        // Tenta validar com o código de 6 dígitos
+        // Tenta validar com o codigo de 6 digitos
         if (strlen($code) === 6 && ctype_digit($code)) {
-            if ($provider->verify(
-                decrypt($user->two_factor_secret),
-                $code
-            )) {
+            if ($provider->verify(decrypt($user->two_factor_secret), $code)) {
                 return response()->json([
                     'status' => 'success',
                     'message' => __('messages.two_factor_verified'),
@@ -232,5 +226,25 @@ class TwoFactorAuthenticationController extends Controller
             'status' => 'error',
             'message' => __('messages.two_factor_code_invalid'),
         ], 400);
+    }
+
+    private function encodeRecoveryCodes(array $codes): string
+    {
+        return json_encode(
+            collect($codes)->map(fn($code) => ['code' => $code, 'used_at' => null])->all()
+        );
+    }
+
+    private function decodeRecoveryCodes(?string $codes): array
+    {
+        if (!$codes) {
+            return [];
+        }
+
+        return collect(json_decode($codes, true))
+            ->pluck('code')
+            ->filter()
+            ->values()
+            ->all();
     }
 }

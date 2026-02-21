@@ -10,6 +10,7 @@ use App\Models\Group;
 use App\Services\AuditLogger;
 use App\Services\AuthorizationService;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class FolderPermissionController extends Controller
 {
@@ -218,8 +219,20 @@ class FolderPermissionController extends Controller
         }
 
         // Paginate manually since we filtered in memory
-        $page = $request->input('page', 1);
-        $paginated = $folders->paginate($perPage, ['*'], 'page', $page);
+        $page = max((int) $request->input('page', 1), 1);
+        $items = $folders->values();
+        $total = $items->count();
+        $slice = $items->slice(($page - 1) * $perPage, $perPage)->values();
+        $paginated = new LengthAwarePaginator(
+            $slice,
+            $total,
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
 
         return response()->json($paginated);
     }

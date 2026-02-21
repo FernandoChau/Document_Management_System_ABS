@@ -135,7 +135,7 @@ class PermissionResolver
      */
     private function getGroupPermissions($user, $resource): array
     {
-        $userGroupIds = $user->groups()->pluck('group_id')->toArray();
+        $userGroupIds = $user->groups()->pluck('groups.id')->toArray();
 
         if (empty($userGroupIds)) {
             return $this->getNoPermissions();

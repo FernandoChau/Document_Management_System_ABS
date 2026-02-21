@@ -4,87 +4,90 @@ namespace App\Http\Controllers\Api\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use GrahamCampbell\ResultType\Success;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 
 class UserController extends Controller
 {
-    function index()
+    public function index(Request $request)
     {
-        $user = User::all();
+        $this->ensureAdmin($request);
+
+        $users = User::query()->latest('created_at')->get();
 
         return response()->json([
-            $user,
             'status' => 'success',
+            'users' => $users,
         ], 200, ['Content-Type' => 'application/json']);
     }
 
-    function show($id)
+    public function show(Request $request, string $id)
     {
+        $this->ensureAdmin($request);
+
         $user = User::find($id);
 
-        return response()->json([
-            $user,
-            'status' => 'success',
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('messages.user_not_found'),
+            ], 404, ['Content-Type' => 'application/json']);
+        }
 
+        return response()->json([
+            'status' => 'success',
+            'user' => $user,
         ], 200, ['Content-Type' => 'application/json']);
     }
 
-    function store(Request $request)
+    public function store(Request $request)
     {
+        $this->ensureAdmin($request);
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|email:rfc,dns|ends_with:@abspro.co.mz|max:255|unique:users',
-            'role' => 'nullable|string|in:admin,user,gestor',
+            'role' => 'nullable|string|in:admin,user',
             'phone' => 'nullable|digits:9',
             'profession' => 'nullable|string|max:100',
             'is_active' => 'nullable|boolean',
         ], [
-            'name.required' => 'O nome é obrigatório.',
-            'name.string' => 'O nome deve ser um texto válido.',
-            'name.max' => 'O nome não pode ter mais de 255 caracteres.',
+            'name.required' => 'O nome e obrigatorio.',
+            'name.string' => 'O nome deve ser um texto valido.',
+            'name.max' => 'O nome nao pode ter mais de 255 caracteres.',
 
-            'email.required' => 'O e-mail é obrigatório.',
-            'email.string' => 'O e-mail deve ser um texto válido.',
-            'email.email' => 'Informe um endereço de e-mail válido.',
+            'email.required' => 'O e-mail e obrigatorio.',
+            'email.string' => 'O e-mail deve ser um texto valido.',
+            'email.email' => 'Informe um endereco de e-mail valido.',
             'email.ends_with' => 'O e-mail deve terminar com @abspro.co.mz.',
-            'email.unique' => 'Este e-mail já está registado no sistema.',
-            'email.max' => 'O e-mail não pode ter mais de 255 caracteres.',
+            'email.unique' => 'Este e-mail ja esta registado no sistema.',
+            'email.max' => 'O e-mail nao pode ter mais de 255 caracteres.',
 
-            'role.required' => 'O perfil é obrigatório.',
-            'role.string' => 'O perfil deve ser um texto válido.',
-            'role.in' => 'O perfil selecionado é inválido.',
+            'role.string' => 'O perfil deve ser um texto valido.',
+            'role.in' => 'O perfil selecionado e invalido.',
 
-            'phone.digits' => 'O número de telefone deve conter exatamente 9 dígitos.',
-
-            'profession.string' => 'A profissão deve ser um texto válido.',
-            'profession.max' => 'A profissão não pode ter mais de 100 caracteres.',
-
-            'is_active.required' => 'O estado do utilizador é obrigatório.',
+            'phone.digits' => 'O numero de telefone deve conter exatamente 9 digitos.',
+            'profession.string' => 'A profissao deve ser um texto valido.',
+            'profession.max' => 'A profissao nao pode ter mais de 100 caracteres.',
             'is_active.boolean' => 'O estado do utilizador deve ser verdadeiro ou falso.',
         ]);
 
         $user = new User();
-
         $user->name = $request->name;
         $user->email = $request->email;
-        $user->role = $request->role;
+        $user->role = $request->role ?? 'user';
         $user->phone = $request->phone;
         $user->profession = $request->profession;
         $user->is_active = false;
         $user->has_authenticated = false;
-
         $user->save();
 
-        // Envia link de definição de password para o novo utilizador
+        // Envia link de definicao de password para o novo utilizador
         $status = Password::sendResetLink(['email' => $user->email]);
-
-        if ($status === Password::RESET_LINK_SENT) {
-            $message = __('messages.user_created_with_reset_sent');
-        } else {
-            $message = __('messages.user_created_reset_failed');
-        }
+        $message = $status === Password::RESET_LINK_SENT
+            ? __('messages.user_created_with_reset_sent')
+            : __('messages.user_created_reset_failed');
 
         return response()->json([
             'status' => 'success',
@@ -94,44 +97,49 @@ class UserController extends Controller
         ], 201, ['Content-Type' => 'application/json']);
     }
 
-    function update(Request $request, $id)
+    public function update(Request $request, string $id)
     {
+        $this->ensureAdmin($request);
+
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('messages.user_not_found'),
+            ], 404, ['Content-Type' => 'application/json']);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|email:rfc,dns|ends_with:@abspro.co.mz|max:255',
-            'role' => 'nullable|string|in:admin,user,gestor',
+            'email' => 'required|string|email|email:rfc,dns|ends_with:@abspro.co.mz|max:255|unique:users,email,' . $user->id,
+            'role' => 'nullable|string|in:admin,user',
             'phone' => 'nullable|digits:9',
             'profession' => 'nullable|string|max:100',
         ], [
-            'name.required' => 'O nome é obrigatório.',
-            'name.string' => 'O nome deve ser um texto válido.',
-            'name.max' => 'O nome não pode ter mais de 255 caracteres.',
+            'name.required' => 'O nome e obrigatorio.',
+            'name.string' => 'O nome deve ser um texto valido.',
+            'name.max' => 'O nome nao pode ter mais de 255 caracteres.',
 
-            'email.required' => 'O e-mail é obrigatório.',
-            'email.string' => 'O e-mail deve ser um texto válido.',
-            'email.email' => 'Informe um endereço de e-mail válido.',
+            'email.required' => 'O e-mail e obrigatorio.',
+            'email.string' => 'O e-mail deve ser um texto valido.',
+            'email.email' => 'Informe um endereco de e-mail valido.',
             'email.ends_with' => 'O e-mail deve terminar com @abspro.co.mz.',
-            'email.unique' => 'Este e-mail já está registado no sistema.',
-            'email.max' => 'O e-mail não pode ter mais de 255 caracteres.',
+            'email.unique' => 'Este e-mail ja esta registado no sistema.',
+            'email.max' => 'O e-mail nao pode ter mais de 255 caracteres.',
 
-            'role.required' => 'O perfil é obrigatório.',
-            'role.string' => 'O perfil deve ser um texto válido.',
-            'role.in' => 'O perfil selecionado é inválido.',
+            'role.string' => 'O perfil deve ser um texto valido.',
+            'role.in' => 'O perfil selecionado e invalido.',
 
-            'phone.digits' => 'O número de telefone deve conter exatamente 9 dígitos.',
-
-            'profession.string' => 'A profissão deve ser um texto válido.',
-            'profession.max' => 'A profissão não pode ter mais de 100 caracteres.',
+            'phone.digits' => 'O numero de telefone deve conter exatamente 9 digitos.',
+            'profession.string' => 'A profissao deve ser um texto valido.',
+            'profession.max' => 'A profissao nao pode ter mais de 100 caracteres.',
         ]);
-
-        $user = User::find($id);
 
         $user->name = $request->name;
         $user->email = $request->email;
-        $user->role = $request->role;
+        $user->role = $request->role ?? $user->role;
         $user->phone = $request->phone;
         $user->profession = $request->profession;
-
         $user->save();
 
         return response()->json([
@@ -141,9 +149,17 @@ class UserController extends Controller
         ], 200, ['Content-Type' => 'application/json']);
     }
 
-    function deactivate($id)
+    public function deactivate(Request $request, string $id)
     {
+        $this->ensureAdmin($request);
+
         $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('messages.user_not_found'),
+            ], 404, ['Content-Type' => 'application/json']);
+        }
 
         $user->is_active = false;
         $user->save();
@@ -155,10 +171,11 @@ class UserController extends Controller
         ], 200, ['Content-Type' => 'application/json']);
     }
 
-    function activate($id)
+    public function activate(Request $request, string $id)
     {
-        $user = User::find($id);
+        $this->ensureAdmin($request);
 
+        $user = User::find($id);
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -174,5 +191,17 @@ class UserController extends Controller
             'message' => __('messages.user_activated_named', ['name' => $user->name]),
             'user' => $user,
         ], 200, ['Content-Type' => 'application/json']);
+    }
+
+    private function ensureAdmin(Request $request): void
+    {
+        $currentUser = $request->user();
+
+        if (!$currentUser || !$currentUser->isAdmin()) {
+            throw new HttpResponseException(response()->json([
+                'status' => 'error',
+                'message' => 'Unauthorized',
+            ], 403));
+        }
     }
 }

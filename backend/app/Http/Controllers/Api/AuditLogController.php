@@ -119,38 +119,35 @@ class AuditLogController extends Controller
      */
     public function stats(Request $request)
     {
-        dd($request);
         $request->validate([
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date',
         ]);
 
-        $query = AuditLog::query();
+        $baseQuery = AuditLog::query();
 
         if ($request->filled('date_from')) {
-            $query->whereDate('created_at', '>=', $request->date_from);
+            $baseQuery->whereDate('created_at', '>=', $request->date_from);
         }
 
         if ($request->filled('date_to')) {
-            $query->whereDate('created_at', '<=', $request->date_to);
+            $baseQuery->whereDate('created_at', '<=', $request->date_to);
         }
 
         $stats = [
-            'total_actions' => $query->count(),
-            'by_action' => $query->selectRaw('action, count(*) as count')
+            'total_actions' => (clone $baseQuery)->count(),
+            'by_action' => (clone $baseQuery)->selectRaw('action, count(*) as count')
                 ->groupBy('action')
                 ->pluck('count', 'action'),
-            'by_resource_type' => $query->selectRaw('resource_type, count(*) as count')
+            'by_resource_type' => (clone $baseQuery)->selectRaw('resource_type, count(*) as count')
                 ->groupBy('resource_type')
                 ->pluck('count', 'resource_type'),
-            'by_user' => $query->selectRaw('user_id, count(*) as count')
+            'by_user' => (clone $baseQuery)->selectRaw('user_id, count(*) as count')
                 ->where('user_id', '!=', null)
                 ->groupBy('user_id')
-                ->with('user')
                 ->limit(10)
-                ->get(['user_id', 'count(*)'])
-                ->pluck('count(*)', 'user_id'),
-            'recent_actions' => $query->with('user')
+                ->pluck('count', 'user_id'),
+            'recent_actions' => (clone $baseQuery)->with('user')
                 ->latest('created_at')
                 ->limit(10)
                 ->get(),

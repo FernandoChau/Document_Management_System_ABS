@@ -1,25 +1,33 @@
 import api from "./axios";
 
-export type CreateUserDTO = {
+export type AdminCreateUserDTO = {
   name: string;
   email: string;
-  password: string;
-  password_confirmation: string;
+  role?: "admin" | "user";
+  phone?: string;
+  profession?: string;
 };
 
-export type LoginUserDTO = {
-  email: string;
-  password: string;
-};
-
-export async function createUser(data: CreateUserDTO) {
-  return api.post("/register", data);
+export function listUsers() {
+  return api.get("/utilizadores");
 }
 
-export async function loginUser(data: LoginUserDTO) {
-  return api.post("/login", data);
+export function showUser(id: string) {
+  return api.get(`/utilizadores/${id}`);
 }
 
-export async function getUsers() {
-  return api.get("/users");
+export function createUserByAdmin(payload: AdminCreateUserDTO) {
+  return api.post("/utilizadores", payload);
+}
+
+export function updateUserByAdmin(id: string, payload: AdminCreateUserDTO) {
+  return api.put(`/utilizadores/${id}`, payload);
+}
+
+export function activateUser(id: string) {
+  return api.put(`/utilizadores/${id}/ativar`);
+}
+
+export function deactivateUser(id: string) {
+  return api.put(`/utilizadores/${id}/desativar`);
 }

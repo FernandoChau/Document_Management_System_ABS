@@ -30,6 +30,14 @@ class AuthorizationService
     }
 
     /**
+     * Resolve effective folder permissions for a user.
+     */
+    public function resolveFolderPermissions(User $user, Folder $folder): array
+    {
+        return $this->permissionResolver->resolveFolderPermissions($user, $folder);
+    }
+
+    /**
      * Check if user can upload to a folder
      */
     public function canUploadToFolder(User $user, Folder $folder): bool
@@ -110,6 +118,14 @@ class AuthorizationService
 
         $permissions = $this->permissionResolver->resolveDocumentPermissions($user, $document);
         return $permissions['can_view'] ?? false;
+    }
+
+    /**
+     * Resolve effective document permissions for a user.
+     */
+    public function resolveDocumentPermissions(User $user, Document $document): array
+    {
+        return $this->permissionResolver->resolveDocumentPermissions($user, $document);
     }
 
     /**

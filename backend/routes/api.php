@@ -35,7 +35,7 @@ Route::prefix('/')->group(function () {
     Route::get('/compartilhamentos/{token}/baixar', [ShareLinkController::class, 'download']);
 
     //Authetication Required
-    Route::middleware(['auth:sanctum'])->group(function () {
+    Route::middleware(['auth:sanctum', 'check.auth.status'])->group(function () {
         Route::post('/sair', [LogoutController::class, 'logout']);                                  //checked
         Route::get('/minha-conta', [ProfileController::class, 'me']);                               //checked
         Route::post('/atualizar-senha', [ProfileController::class, 'updatePassword']);              //checked    

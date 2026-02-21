@@ -15,12 +15,7 @@ import {
   logoutUser,
   registerUser,
 } from "../api/auth.service";
-import {
-  clearStoredToken,
-  getStoredToken,
-  setStoredToken,
-  setUnauthorizedHandler,
-} from "../api/axios";
+import { setUnauthorizedHandler } from "../api/axios";
 
 type AuthContextType = {
   user: AuthUser | null;
@@ -39,8 +34,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
 
   const clearSession = useCallback(() => {
-    clearStoredToken();
+    // Token é automaticamente removido pelo backend em logout
+    // Não precisamos limpar localStorage pois usamos cookies HttpOnly agora
     setUser(null);
+
+    // SEGURANÇA: Remove qualquer token antigo que possa estar no localStorage
+    // (dados legados do código anterior)
+    localStorage.removeItem("dms_access_token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("token");
+    localStorage.removeItem("auth_token");
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -50,7 +53,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     const { data } = await loginUser({ email, password });
-    setStoredToken(data.token);
+    // Token é automaticamente salvo em cookie HttpOnly pelo backend
+    // Não precisamos fazer nada, apenas atualizar o estado do usuário
     setUser(data.user);
   }, []);
 
@@ -69,17 +73,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     setUnauthorizedHandler(clearSession);
 
-    const token = getStoredToken();
-    if (!token) {
-      setIsBootstrapping(false);
-      return () => {
-        setUnauthorizedHandler(null);
-      };
-    }
+    // SEGURANÇA: Limpa qualquer token antigo no localStorage na inicialização
+    // Isso garante que dados legados de sessões anteriores sejam removidos
+    localStorage.removeItem("dms_access_token");
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("token");
+    localStorage.removeItem("auth_token");
 
+    // Tenta carregar perfil do usuário na inicialização
+    // Se houver cookie de sessão válido, será incluído automaticamente na requisição
+    // Se não houver ou estiver expirado, a requisição retornará 401
     refreshProfile()
       .catch(() => {
-        clearSession();
+        // Sem autenticação válida, apenas finaliza bootstrap
       })
       .finally(() => {
         setIsBootstrapping(false);

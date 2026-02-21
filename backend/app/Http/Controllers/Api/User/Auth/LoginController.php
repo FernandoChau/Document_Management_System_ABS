@@ -48,10 +48,28 @@ class LoginController extends Controller
         // Cria token para SPA / API
         $token = $user->createToken('dms_api')->plainTextToken;
 
-        return response()->json([
+        // SEGURANÇA: Define o token em um cookie HttpOnly (não retorna no JSON)
+        // - HttpOnly: JavaScript não consegue acessar (mitiga XSS)
+        // - Secure: Cookie só é enviado em HTTPS
+        // - SameSite: Protege contra CSRF
+        $response = response()->json([
             'message' => 'Login efetuado com sucesso',
-            'token' => $token,
             'user' => $user
         ]);
+
+        // Sintaxe: cookie(name, value, minutes, path, domain, secure, httpOnly, raw, sameSite)
+        $response->cookie(
+            'api_token',           // name
+            $token,                // value
+            60 * 24,               // minutes (24 horas)
+            '/',                   // path
+            null,                  // domain
+            true,                  // secure (apenas HTTPS)
+            true,                  // httpOnly (protege contra XSS)
+            false,                 // raw
+            'lax'                  // sameSite (protege contra CSRF)
+        );
+
+        return $response;
     }
 }

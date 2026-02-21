@@ -1,6 +1,10 @@
 import axios from "axios";
 
-export const ACCESS_TOKEN_KEY = "dms_access_token";
+/**
+ * SEGURANÇA: Tokens agora são armazenados em cookies HttpOnly (não localStorage)
+ * O navegador envia automaticamente cookies em requisições cross-origin com withCredentials
+ * Isso mitiga ataques XSS porque JavaScript não consegue acessar cookies HttpOnly
+ */
 
 const PUBLIC_AUTH_ENDPOINTS = [
   "/entrar",
@@ -8,18 +12,6 @@ const PUBLIC_AUTH_ENDPOINTS = [
   "/recuperar-senha",
   "/redefinir-senha",
 ];
-
-export function getStoredToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
-}
-
-export function setStoredToken(token: string): void {
-  localStorage.setItem(ACCESS_TOKEN_KEY, token);
-}
-
-export function clearStoredToken(): void {
-  localStorage.removeItem(ACCESS_TOKEN_KEY);
-}
 
 let unauthorizedHandler: (() => void) | null = null;
 
@@ -33,14 +25,8 @@ const api = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-});
-
-api.interceptors.request.use((config) => {
-  const token = getStoredToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
+  // Habilita o envio de cookies em requisições (necessário para cookies HttpOnly)
+  withCredentials: true,
 });
 
 api.interceptors.response.use(
@@ -49,8 +35,11 @@ api.interceptors.response.use(
     const status = error?.response?.status as number | undefined;
     const requestUrl = String(error?.config?.url ?? "");
 
-    if (status === 401 && !PUBLIC_AUTH_ENDPOINTS.some((path) => requestUrl.includes(path))) {
-      clearStoredToken();
+    if (
+      status === 401 &&
+      !PUBLIC_AUTH_ENDPOINTS.some((path) => requestUrl.includes(path))
+    ) {
+      // Token é removido automaticamente pelo backend em logout
       unauthorizedHandler?.();
     }
 

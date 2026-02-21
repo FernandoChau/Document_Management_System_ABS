@@ -9,11 +9,27 @@ class LogoutController extends Controller
 {
     public function logout(Request $request)
     {
-        // dd($request);
+        // Deleta o token de autenticação do banco de dados
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
+        // Remove o cookie HttpOnly no navegador enviando um cookie expirado
+        $response = response()->json([
             'message' => __('messages.logout_success')
         ]);
+
+        // Sintaxe: cookie(name, value, minutes, path, domain, secure, httpOnly, raw, sameSite)
+        $response->cookie(
+            'api_token',           // name
+            '',                    // value
+            -1,                    // minutes (expira imediatamente)
+            '/',                   // path
+            null,                  // domain
+            true,                  // secure (apenas HTTPS)
+            true,                  // httpOnly
+            false,                 // raw
+            'lax'                  // sameSite
+        );
+
+        return $response;
     }
 }

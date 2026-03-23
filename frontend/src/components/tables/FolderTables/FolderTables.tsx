@@ -6,16 +6,54 @@ import {
   TableRow,
 } from "../../ui/table";
 // import Badge from "../../ui/badge/Badge";
-import { DownloadIcon, FolderIcon, MoreDotIcon, PaperPlaneIcon, PencilIcon, TrashBinIcon } from "../../../icons";
-import { DocumentTextIcon, FolderIcon as FolderSolid } from '@heroicons/react/24/solid';
-import { AdjustmentsHorizontalIcon, DocumentPlusIcon, EyeIcon,  FolderPlusIcon, KeyIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  DownloadIcon,
+  FolderIcon,
+  MoreDotIcon,
+  PaperPlaneIcon,
+  PencilIcon,
+  TrashBinIcon,
+} from "../../../icons";
+import {
+  DocumentTextIcon,
+  FolderIcon as FolderSolid,
+} from "@heroicons/react/24/solid";
+import {
+  AdjustmentsHorizontalIcon,
+  DocumentPlusIcon,
+  EyeIcon,
+  FolderPlusIcon,
+  KeyIcon,
+  MagnifyingGlassIcon,
+} from "@heroicons/react/24/outline";
 import { Dropdown } from "../../ui/dropdown/Dropdown";
 import { DropdownItem } from "../../ui/dropdown/DropdownItem";
 import { useState } from "react";
 import Button from "../../ui/button/Button";
+import { Modal } from "@/components/ui/modal";
+import { FileUploadModal } from "@/components/ui/fileModal/FileUploadModal";
+import Label from "@/components/form/Label";
+import Input from "@/components/form/input/InputField";
+import TextArea from "@/components/form/input/TextArea";
+import Select from "@/components/form/Select";
+import SelectInputs from "@/components/form/form-elements/SelectInputs";
+import MultiSelect from "@/components/form/MultiSelect";
 
 // Define the TypeScript interface for the table rows
 interface Product {
+  id: number; // Unique identifier for each product
+  name: string; // Product name
+  variants: string; // Number of variants (e.g., "1 Variant", "2 Variants")
+  category: string; // Category of the product
+  price: string; // Price of the product (as a string with currency symbol)
+  owner: string;
+  ownerAvatar: string;
+  // status: string; // Status of the product
+  image: string; // URL or path to the product image
+  status: "Delivered" | "Pending" | "Canceled"; // Status of the product
+}
+
+interface File {
   id: number; // Unique identifier for each product
   name: string; // Product name
   variants: string; // Number of variants (e.g., "1 Variant", "2 Variants")
@@ -87,22 +125,134 @@ const tableData: Product[] = [
   },
 ];
 
+// Define the table data using the interface
+const tableDataFile: File[] = [
+  {
+    id: 10,
+    name: "Recursos Humanos",
+    variants: "RH",
+    owner: "Fernando Chau",
+    ownerAvatar: "FC",
+    category: "Laptop",
+    price: "$2399.00",
+    status: "Delivered",
+    image: "/images/product/product-01.jpg", // Replace with actual image URL
+  },
+  {
+    id: 20,
+    name: "Financas",
+    variants: "FIN",
+    owner: "Ivandro Bauaze",
+    ownerAvatar: "IB",
+    category: "Watch",
+    price: "$879.00",
+    status: "Pending",
+    image: "/images/product/product-02.jpg", // Replace with actual image URL
+  },
+  {
+    id: 30,
+    name: "Administrativa",
+    variants: "ADM",
+    owner: "Mirene Mussumbe",
+    ownerAvatar: "MM",
+    category: "SmartPhone",
+    price: "$1869.00",
+    status: "Delivered",
+    image: "/images/product/product-03.jpg", // Replace with actual image URL
+  },
+  {
+    id: 40,
+    name: "Tecnologias de Informacao",
+    variants: "TI",
+    owner: "Naila Tsenane",
+    ownerAvatar: "NT",
+    category: "Electronics",
+    price: "$1699.00",
+    status: "Canceled",
+    image: "/images/product/product-04.jpg", // Replace with actual image URL
+  },
+  {
+    id: 50,
+    name: "Comunicacao e Imagem",
+    variants: "CI",
+    owner: "Cornelio Pessana",
+    ownerAvatar: "CP",
+    category: "Accessories",
+    price: "$240.00",
+    status: "Delivered",
+    image: "/images/product/product-05.jpg", // Replace with actual image URL
+  },
+];
+
 export default function FolderTables() {
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editItemId, setEditItemId] = useState<string | null>(null);
+  const [editItemType, setEditItemType] = useState<
+    "folder" | "document" | null
+  >(null);
+
+  const [selectedValues, setSelectedValues] = useState<string[]>([]);
+
+  const [activeFolderModal, setActiveFolderModal] = useState<
+    "create" | "edit" | "view" | "delete" | "permission" | null
+  >(null);
+
+  const [activeFilerModal, setActiveFilerModal] = useState<
+    "create" | "edit" | "view" | "delete" | "permission" | null
+  >(null);
+
+  const [activeFileModal, setActiveFileModal] = useState(false);
+
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+  const handleEditFolder = (folderId: string) => {
+    setEditItemId(folderId);
+    setEditItemType("folder");
+    setEditModalOpen(true);
+  };
+
+  const toggleDropdownFolder = (productId: string) => {
+    setOpenMenuId(openMenuId === productId ? null : productId);
+  };
+
+  const toggleDropdownFile = (productId: string) => {
+    setOpenMenuId(openMenuId === productId ? null : productId);
+  };
+
+  const handleCreateFoler = () => {
+    setActiveFolderModal("create");
+  };
+
+  const handleCreateFile = () => {
+    setActiveFileModal(true);
+  };
+
+  const handlePermissionFoler = () => {
+    setActiveFolderModal("permission");
+  };
+
+  const handlePermissionFile = () => {
+    setActiveFilerModal("permission");
+  };
+
+  const handleUploadFiles = (files: File[]) => {
+    // Aqui você pode processar os ficheiros
+    console.log("Ficheiros carregados:", files);
+    // Enviar para o servidor ou processar conforme necessário
+  };
+
   const [isOpen, setIsOpen] = useState(false);
 
-  function toggleDropdown() {
-    setIsOpen(!isOpen);
-  }
-
   function closeDropdown() {
-    setIsOpen(false);
+    setOpenMenuId(false);
   }
   return (
     <div className=" max-h-[calc(100vh-110px)] overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-lg flex items-center gap-2 text-gray-800 dark:text-white/90">
-            <FolderIcon className="size-5 -mt-0.5"/> ABS / Folder / <span className=" font-bold">Sub dir</span>
+            <FolderIcon className="size-5 -mt-0.5" /> ABS / Folder /{" "}
+            <span className=" font-bold">Sub dir</span>
           </h3>
         </div>
 
@@ -115,12 +265,20 @@ export default function FolderTables() {
             <AdjustmentsHorizontalIcon className="size-5" />
             Filtro
           </button>
-          <Button variant="primary" className="h-10 bg-yellow-500 text-white dark:bg-yellow-400 dark:text-gray-950 hover:bg-yellow-400 dark:hover:bg-yellow-400">
-            <FolderPlusIcon className="size-5"/>
+          <Button
+            onClick={handleCreateFoler}
+            variant="primary"
+            className="h-10 bg-yellow-500 text-white dark:bg-yellow-400 dark:text-gray-950 hover:bg-yellow-400 dark:hover:bg-yellow-400"
+          >
+            <FolderPlusIcon className="size-5" />
             {/* Criar Pasta */}
           </Button>
-          <Button variant="primary" className="h-10 bg-brand-500 dark:bg-brand-500 dark:text-gray-950 dark:hover:opacity-95">
-            <DocumentPlusIcon className="size-5"/>
+          <Button
+            onClick={handleCreateFile}
+            variant="primary"
+            className="h-10 bg-brand-500 dark:bg-brand-500 dark:text-gray-950 dark:hover:opacity-95"
+          >
+            <DocumentPlusIcon className="size-5" />
             {/* Subir Ficheiro */}
           </Button>
         </div>
@@ -160,12 +318,15 @@ export default function FolderTables() {
           {/* Table Body */}
 
           <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {tableData.map((product) => (
-              <TableRow key={product.id} className=" cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30">
+            {tableDataFile.map((product) => (
+              <TableRow
+                key={product.id}
+                className=" cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30"
+              >
                 <TableCell className="py-3">
                   <div className="flex items-center gap-2">
                     <div className="h-[50px] w-[50px] flex items-center justify-center overflow-hidden rounded-md">
-                        <FolderSolid className="h-8 w-8 text-yellow-400 dark:text-yellow-300" />
+                      <FolderSolid className="h-8 w-8 text-yellow-400 dark:text-yellow-300" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-700 text-theme-m dark:text-white/80">
@@ -183,133 +344,301 @@ export default function FolderTables() {
                 <TableCell className="py-2 pr-10  whitespace-nowrap w-10  text-gray-500 text-theme-sm dark:text-gray-400">
                   <div className="flex items-center gap-2">
                     <p className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-theme-xs font-medium w-7 h-7 flex items-center justify-center rounded-full">
-                        {product.ownerAvatar}
+                      {product.ownerAvatar}
                     </p>
-                    <p className="text-gray-700 dark:text-gray-300">{product.owner}</p>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      {product.owner}
+                    </p>
                   </div>
                 </TableCell>
                 <TableCell className="py-3 flex gap-2 text-gray-500 text-theme-sm dark:text-gray-400">
-                    <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
-                        <PencilIcon className="size-5"/>
+                  <button
+                    onClick={() => handleEditFolder(product.id)}
+                    className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
+                  >
+                    <PencilIcon className="size-5" />
+                  </button>
+                  <button className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
+                    <EyeIcon className="size-5" />
+                  </button>
+                  <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
+                    <DownloadIcon className="size-5" />
+                  </button>
+                  <div className="mt-1">
+                    <button
+                      className="dropdown-toggle"
+                      onClick={() => toggleDropdownFolder(product.id)}
+                    >
+                      <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
                     </button>
-                    <button className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
-                        <EyeIcon className="size-5"/>
-                    </button>
-                    <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
-                        <DownloadIcon className="size-5"/>
-                    </button>
-                    <div className="relative inline-block mt-1">
-                        <button className="dropdown-toggle" onClick={toggleDropdown}>
-                            <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
-                        </button>
-                        <Dropdown 
-                            isOpen={isOpen}
-                            onClose={closeDropdown}
-                            className="w-40 p-2"
-                        >
-                            <DropdownItem
-                            onItemClick={closeDropdown}
-                            className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-                            >
-                                <PaperPlaneIcon className=" -rotate-45 -mt-0.5" />
-                                Partilhar
-                            </DropdownItem>
-                            <DropdownItem
-                            onItemClick={closeDropdown}
-                            className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-                            >
-                                <KeyIcon className="size-3.5 -rotate-180"/>
-                                Permissões
-                            </DropdownItem>
-                            <DropdownItem
-                            onItemClick={closeDropdown}
-                            className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-                            >
-                                <TrashBinIcon/>
-                                Remover
-                            </DropdownItem>
-                        </Dropdown>
-                    </div>
+                    <Dropdown
+                      isOpen={openMenuId === product.id}
+                      onClose={closeDropdown}
+                      className="w-40 p-2"
+                    >
+                      <DropdownItem
+                        onItemClick={closeDropdown}
+                        className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                      >
+                        <PaperPlaneIcon className=" -rotate-45 -mt-0.5" />
+                        Partilhar
+                      </DropdownItem>
+                      <DropdownItem
+                        onItemClick={closeDropdown}
+                        className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                      >
+                        <KeyIcon className="size-3.5 -rotate-180" />
+                        Permissões
+                      </DropdownItem>
+                      <DropdownItem
+                        onItemClick={closeDropdown}
+                        className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                      >
+                        <TrashBinIcon />
+                        Remover
+                      </DropdownItem>
+                    </Dropdown>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
 
-            {tableData.map((product) => (
-              <TableRow key={product.id} className=" cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30">
+            {tableData.map((file) => (
+              <TableRow
+                key={file.id}
+                className=" cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30"
+              >
                 <TableCell className="py-2.5">
                   <div className="flex items-center gap-2">
                     <div className="h-[50px] w-[50px] flex items-center justify-center overflow-hidden rounded-md">
-                        <DocumentTextIcon className="h-8 w-8 text-brand-400 dark:text-brand-300" />
+                      <DocumentTextIcon className="h-8 w-8 text-brand-400 dark:text-brand-300" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-700 text-theme-m dark:text-white/80">
-                        {product.name}
+                        {file.name}
                       </p>
                       <p className="text-gray-500 text-theme-xs dark:text-gray-400">
-                        Ref: {product.variants}
+                        Ref: {file.variants}
                       </p>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className="py-2.5 w-5 pr-15 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {product.price}
+                  {file.price}
                 </TableCell>
                 <TableCell className="py-2.5 pr-10  whitespace-nowrap w-10  text-gray-500 text-theme-sm dark:text-gray-400">
                   <div className="flex items-center gap-2">
                     <p className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-theme-xs font-medium w-7 h-7 flex items-center justify-center rounded-full">
-                        {product.ownerAvatar}
+                      {file.ownerAvatar}
                     </p>
-                    <p className="text-gray-700 dark:text-gray-300">{product.owner}</p>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      {file.owner}
+                    </p>
                   </div>
                 </TableCell>
                 <TableCell className="py-2.5 pr-5 flex gap-2 text-gray-500 text-theme-sm dark:text-gray-400">
-                    <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
-                        <PencilIcon className="size-5"/>
+                  <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
+                    <PencilIcon className="size-5" />
+                  </button>
+                  <button className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
+                    <EyeIcon className="size-5" />
+                  </button>
+                  <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
+                    <DownloadIcon className="size-5" />
+                  </button>
+                  <div className=" mt-1">
+                    <button
+                      className="dropdown-toggle"
+                      onClick={() => toggleDropdownFile(file.id)}
+                    >
+                      <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
                     </button>
-                    <button className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
-                        <EyeIcon className="size-5"/>
-                    </button>
-                    <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
-                        <DownloadIcon className="size-5"/>
-                    </button>
-                    <div className="relative inline-block mt-1">
-                        <button className="dropdown-toggle" onClick={toggleDropdown}>
-                            <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
-                        </button>
-                        <Dropdown 
-                            isOpen={isOpen}
-                            onClose={closeDropdown}
-                            className="w-40 p-2"
-                        >
-                            <DropdownItem
-                            onItemClick={closeDropdown}
-                            className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-                            >
-                                <PaperPlaneIcon className=" -rotate-45 -mt-0.5" />
-                                Partilhar
-                            </DropdownItem>
-                            <DropdownItem
-                            onItemClick={closeDropdown}
-                            className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
-                            >
-                                <KeyIcon className="size-3.5 -rotate-180"/>
-                                Permissões
-                            </DropdownItem>
-                            <DropdownItem
-                            onItemClick={closeDropdown}
-                            className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
-                            >
-                                <TrashBinIcon/>
-                                Remover
-                            </DropdownItem>
-                        </Dropdown>
-                    </div>
+                    <Dropdown
+                      isOpen={openMenuId === file.id}
+                      onClose={closeDropdown}
+                      className="w-40 p-2"
+                    >
+                      <DropdownItem
+                        onItemClick={closeDropdown}
+                        className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                      >
+                        <PaperPlaneIcon className=" -rotate-45 -mt-0.5" />
+                        Partilhar
+                      </DropdownItem>
+                      <DropdownItem
+                        onItemClick={handlePermissionFoler}
+                        className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                      >
+                        <KeyIcon className="size-3.5 -rotate-180" />
+                        Permissões
+                      </DropdownItem>
+                      <DropdownItem
+                        onItemClick={closeDropdown}
+                        className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                      >
+                        <TrashBinIcon />
+                        Remover
+                      </DropdownItem>
+                    </Dropdown>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <Modal
+        isOpen={activeFolderModal === "create"}
+        onClose={() => setActiveFolderModal(null)}
+        className="max-w-[700px] m-4"
+      >
+        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="px-2 pr-14">
+            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Criar Pasta
+            </h4>
+            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+              Preencha os campos abaixo e clique em "Criar" para criar uma pasta
+              na plataforma.
+            </p>
+          </div>
+
+          <form className="flex flex-col">
+            <div className="custom-scrollbar h-fit overflow-y-auto px-2 pb-3">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <Label>
+                    Nome da Pasta <span className="text-red-500">*</span>
+                  </Label>
+                  <Input type="text" placeholder="Ex: Contractos" />
+                </div>
+
+                <div>
+                  <Label>
+                    Referência da Pasta <span className="text-red-500">*</span>
+                  </Label>
+                  <Input type="text" placeholder="Ex: Con" />
+                </div>
+
+                <div>
+                  <Label>Descrição</Label>
+                  <TextArea
+                    placeholder="Escreva uma breve descrição sobre a pasta..."
+                    rows={4}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setActiveFolderModal(null)}
+              >
+                Fechar
+              </Button>
+              {/* <Button size="sm" onClick={handleSave}> */}
+              <Button size="sm" onClick={() => setActiveFolderModal(null)}>
+                Salvar
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={activeFolderModal === "permission"}
+        onClose={() => setActiveFolderModal(null)}
+        className="max-w-[700px] m-4"
+      >
+        <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
+          <div className="px-2 pr-14">
+            <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
+              Atribuir Permissões
+            </h4>
+            <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
+              Selecione o utilizador e as permissões depois clique em "Atribuir"
+              para atribuir as permissões ao utilizador.
+            </p>
+          </div>
+
+          <form className="flex flex-col">
+            <div className="custom-scrollbar h'fit overflow-y-auto px-2 pb-3">
+              <div className="flex flex-col gap-4">
+                <div>
+                  <Label>
+                    Utilizador <span className="text-red-500">*</span>
+                  </Label>
+                  <Select
+                    options={[
+                      { value: "1", label: "Fernando" },
+                      { value: "2", label: "Ivandro" },
+                      { value: "3", label: "Mirene" },
+                      { value: "4", label: "Malaquia" },
+                      { value: "5", label: "Helder" },
+                    ]}
+                    placeholder="Selecione o role"
+                    // onChange={handleSelectChange}
+                    className="dark:bg-dark-900"
+                  />
+                </div>
+
+                <div>
+                  <Label>
+                    Utilizador <span className="text-red-500">*</span>
+                  </Label>
+                  <MultiSelect
+                    options={[
+                      { value: "view", text: "Ver" },
+                      { value: "edit", text: "Editar" },
+                      { value: "delete", text: "Remover" },
+                      { value: "download", text: "Downlad" },
+                      { value: "share", text: "Partilhar" },
+                      { value: "permission", text: "Permissões" },
+                    ]}
+                    defaultSelected={["view", "download"]}
+                    onChange={(values) => setSelectedValues(values)}
+                  />
+                  <p className="sr-only">
+                    Selected Values: {selectedValues.join(", ")}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 px-2 mt-6 lg:justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setActiveFolderModal(null)}
+              >
+                Fechar
+              </Button>
+              {/* <Button size="sm" onClick={handleSave}> */}
+              <Button size="sm" onClick={() => setActiveFolderModal(null)}>
+                Atribuir
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Modal>
+
+      <FileUploadModal
+        isOpen={activeFileModal}
+        onClose={() => setActiveFileModal(false)}
+        onUpload={handleUploadFiles}
+      />
+
+      <EditItemModal
+        isOpen={editModalOpen}
+        onClose={() => setEditModalOpen(false)}
+        itemId={editItemId || ""}
+        itemType={editItemType || "folder"}
+        onSuccess={() => {
+          // Recarregar dados aqui
+          loadFoldersAndDocuments();
+        }}
+      />
     </div>
   );
 }

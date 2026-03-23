@@ -1,5 +1,3 @@
-import React from 'react'
-
 import {
   Table,
   TableBody,
@@ -8,13 +6,18 @@ import {
   TableRow,
 } from "../../ui/table";
 // import Badge from "../../ui/badge/Badge";
-import { DownloadIcon, FolderIcon, MoreDotIcon, PaperPlaneIcon, PencilIcon, TrashBinIcon } from "../../../icons";
-import { DocumentTextIcon, FolderIcon as FolderSolid } from '@heroicons/react/24/solid';
-import { AdjustmentsHorizontalIcon, DocumentPlusIcon, EyeIcon,  FolderPlusIcon, InboxIcon, KeyIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
+import {
+  DownloadIcon,
+  MoreDotIcon,
+  PaperPlaneIcon,
+  PencilIcon,
+  TrashBinIcon,
+} from "../../../icons";
+import { DocumentTextIcon } from "@heroicons/react/24/solid";
+import { EyeIcon, InboxIcon, KeyIcon } from "@heroicons/react/24/outline";
 import { Dropdown } from "../../ui/dropdown/Dropdown";
 import { DropdownItem } from "../../ui/dropdown/DropdownItem";
 import { useState } from "react";
-import Button from "../../ui/button/Button";
 
 // Define the TypeScript interface for the table rows
 interface Product {

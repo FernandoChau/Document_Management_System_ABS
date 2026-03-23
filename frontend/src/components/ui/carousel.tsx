@@ -1,5 +1,5 @@
 "use client";
-import { IconArrowNarrowRight } from "@tabler/icons-react";
+import { ArrowRight } from "lucide-react";
 import { useState, useRef, useId, useEffect } from "react";
 import { useNavigate } from "react-router";
 
@@ -22,7 +22,7 @@ const Slide = ({ slide, index, current, handleSlideClick }: SlideProps) => {
 
   const xRef = useRef(0);
   const yRef = useRef(0);
-  const frameRef = useRef<number>();
+  const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
     const animate = () => {
@@ -40,7 +40,7 @@ const Slide = ({ slide, index, current, handleSlideClick }: SlideProps) => {
     frameRef.current = requestAnimationFrame(animate);
 
     return () => {
-      if (frameRef.current) {
+      if (frameRef.current !== null) {
         cancelAnimationFrame(frameRef.current);
       }
     };
@@ -154,7 +154,7 @@ const CarouselControl = ({
       title={title}
       onClick={handleClick}
     >
-      <IconArrowNarrowRight className="text-neutral-600 dark:text-neutral-200" />
+      <ArrowRight className="text-neutral-600 dark:text-neutral-200" />
     </button>
   );
 };

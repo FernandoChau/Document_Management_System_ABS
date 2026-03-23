@@ -1,5 +1,4 @@
 import ReportsTable from '@/components/tables/ReportsTable/ReportsTable'
-import React from 'react'
 
 function Reports() {
   return (

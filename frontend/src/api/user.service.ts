@@ -2,15 +2,15 @@ import api from "./axios";
 
 // ✅ Tipo para dados do usuário retornados do backend
 export type User = {
-  id: string;
+  id?: string;
   name: string;
   email: string;
   role: "admin" | "user";
   profession?: string;
   phone?: string;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 };
 
 // ✅ Tipo para criar/atualizar usuário
@@ -20,6 +20,7 @@ export type AdminCreateUserDTO = {
   role?: "admin" | "user";
   phone?: string;
   profession?: string;
+  is_active: boolean;
 };
 
 // ✅ Tipo de resposta da listagem (estrutura real do backend)

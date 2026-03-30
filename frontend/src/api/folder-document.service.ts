@@ -77,27 +77,39 @@ export const getDocumentById = async (
 export const createFolder = async (
   data: Partial<Folder>,
 ): Promise<Folder> => {
-  const response = await api.post("/folders", data);
+  const response = await api.post("/pastas", data);
   return response.data.data || response.data;
 };
 
 /**
- * Upload de um novo documento
+ * Upload de um novo documento (com folder_id opcional)
  */
 export const uploadDocument = async (
-  folderId: string,
+  folderId: string | undefined,
   file: File,
 ): Promise<Document> => {
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("folder_id", folderId);
 
-  const response = await api.post("/documents", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
-  return response.data.data || response.data;
+  // Se folderId for definido, envia para a pasta específica
+  if (folderId) {
+    formData.append("folder_id", folderId);
+    
+    const response = await api.post("/documentos", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data.data || response.data;
+  } else {
+    // Se não houver folderId, envia para raiz
+    const response = await api.post("/documentos", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    return response.data.data || response.data.documents?.[0] || response.data;
+  }
 };
 
 /**

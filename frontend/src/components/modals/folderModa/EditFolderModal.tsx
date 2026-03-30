@@ -1,27 +1,26 @@
 import React, { useState } from "react";
-import { Modal } from "../modal";
+import { Modal } from "../../ui/modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
-import Button from "../button/Button";
+import Button from "../../ui/button/Button";
 
 interface EditFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (name: string, slug: string, description: string) => void;
-  folderData: [id: string, name: string, slug: string, description: string];
+  folderId: string;
 }
 
 function EditFolderModal({
   isOpen,
   onClose,
   onSubmit,
-  folderData,
+  folderId,
 }: EditFolderModalProps) {
-  const [id, setId] = useState(folderData[0]);
-  const [name, setName] = useState(folderData[1]);
-  const [slug, setSlug] = useState(folderData[2]);
-  const [description, setDescription] = useState(folderData[3]);
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleSubmit = () => {
     onSubmit(name, slug, description);
@@ -35,10 +34,12 @@ function EditFolderModal({
       <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
         <div className="px-2 pr-14">
           <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-            Editar Pasta <span className=" text-brand-500 font-medium">{ folderData[1] }</span>
+            Editar Pasta{" "}
+            <span className=" text-brand-500 font-medium">_____</span>
           </h4>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
-            Altere apenas o necessario a abaixo e clique em "Editar" para alterar as informacoes da pasta.
+            Altere apenas o necessario a abaixo e clique em "Editar" para
+            alterar as informacoes da pasta.
           </p>
         </div>
 
@@ -51,7 +52,7 @@ function EditFolderModal({
                 </Label>
                 <Input
                   type="text"
-                  value={folderData[1]}
+                  value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Contractos"
                 />
@@ -63,7 +64,7 @@ function EditFolderModal({
                 </Label>
                 <Input
                   type="text"
-                  value={folderData[2]}
+                  value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="Ex: Con"
                 />
@@ -73,7 +74,8 @@ function EditFolderModal({
                 <Label>Descrição</Label>
                 <TextArea
                   placeholder="Escreva uma breve descrição sobre a pasta..."
-                  value={folderData[3]}
+                  value={description}
+                  //   onChange={(e) => setDescription(e.target.value)}
                   onChange={(value) => setDescription(value)}
                   rows={4}
                 />

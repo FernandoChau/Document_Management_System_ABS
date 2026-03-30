@@ -31,7 +31,7 @@ import { DropdownItem } from "../../ui/dropdown/DropdownItem";
 import { useState } from "react";
 import Button from "../../ui/button/Button";
 import { Modal } from "@/components/ui/modal";
-import { FileUploadModal } from "@/components/ui/fileModal/FileUploadModal";
+import { FileUploadModal } from "@/components/modals/fileModal/FileUploadModal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";

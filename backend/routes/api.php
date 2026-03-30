@@ -90,6 +90,7 @@ Route::prefix('/')->group(function () {
         // ==================== DOCUMENTS ====================
         Route::prefix('documentos')->group(function () {
             Route::get('/', [DocumentController::class, 'index']);
+            Route::post('/', [DocumentController::class, 'storeRoot']); // Root upload (novo)
             Route::get('/{document}', [DocumentController::class, 'show']); // View
             Route::put('/{document}', [DocumentController::class, 'update']);
             Route::get('/{document}/baixar', [DocumentController::class, 'download']); // Download File

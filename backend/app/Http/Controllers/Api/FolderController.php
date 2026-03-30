@@ -56,19 +56,22 @@ class FolderController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:50',
+            'description' => 'nullable|string|max:1000',
             'parent_id' => 'nullable|exists:folders,id',
-            'department_id' => 'required_if:parent_id,null|exists:departments,id',
+            'department_id' => 'nullable|exists:departments,id',
         ]);
 
         $parent = $request->parent_id ? Folder::findOrFail($request->parent_id) : null;
         $department = $request->department_id ? Department::findOrFail($request->department_id) : null;
 
-        // Check upload permission
+        // Check upload permission se tiver parent
         if ($parent && !$this->authorizationService->canUploadToFolder($user, $parent)) {
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
-        if ($department && $parent === null && !$user->isAdmin()) {
+        // Se for raiz (sem parent) apenas admin pode criar
+        if (!$parent && !$user->isAdmin()) {
             return response()->json(['error' => 'Only admin can create root folders'], 403);
         }
 

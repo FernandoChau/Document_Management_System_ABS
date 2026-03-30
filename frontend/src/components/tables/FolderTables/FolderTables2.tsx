@@ -33,58 +33,48 @@ import {
   PencilIcon,
 } from "@heroicons/react/24/outline";
 import { FolderOpenIcon } from "@heroicons/react/24/solid";
-import { AlertCircleIcon, DownloadIcon, FolderIcon } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { AlertCircleIcon, CheckCircleIcon, DownloadIcon, FolderIcon } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface FolderTables2Props {
   folderId?: string;
 }
 
 function FolderTables2({ folderId }: FolderTables2Props) {
-  const [activeFileModal, setActiveFileModal] = useState(false);
-  const [activeFolderModal, setActiveFolderModal] = useState(false);
-  const [editItemModal, setEditItemModal] = useState<"file" | "folder" | null>(
-    null,
-  );
-  const [itemPermissionModal, setitemPermissionModal] = useState(false);
-  const [removeItemModal, setRemoveItemModal] = useState(false);
-  const [shareItemModal, setShareItemModal] = useState(false);
+  const [activeFolderModal, setActiveFolderModal] = useState<"create" | "edit" | null>(null);
+  const [activeFileModal, setActiveFileModal] = useState<"create" | "edit" | null>(null);
+  const [activeItemModal, setActiveItemModal] = useState<"share" | "permission" | "remove" | null>(null);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  const [folderData, setFolderData] = useState<Folder | null>(null);
   const [itemId, setItemId] = useState<string | null>(null);
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-
-  const handleOpenItem = (id: String) => {
-    // const itemId = id.toString();
-    // console.log("folder id: ", itemId);
-    // FolderTables2("019c1db3-309c-7393-822e-02e1b3869f67");
-  };
-
-  const handleShareItem = (id: string) => {
-    setItemId(id);
-    setShareItemModal(true);
+  const handleShareItem = (data: Folder) => {
+    setFolderData(data);
+    setActiveItemModal("share");
     closeDropdown();
   };
 
-  const handleRemoveItem = (id: string) => {
-    setItemId(id);
-    setRemoveItemModal(true);
+  const handleRemoveItem = (data: Folder) => {
+    setFolderData(data);
+    setActiveItemModal("remove");
     closeDropdown();
   };
 
-  const handleSetPermission = (id: string) => {
-    setItemId(id);
-    setitemPermissionModal(true);
+  const handleSetPermission = (data: Folder) => {
+    setFolderData(data);
+    setActiveItemModal("permission")
     closeDropdown();
   };
 
-  const handeEditFolderModal = (id: string) => {
-    setItemId(id);
-    setEditItemModal("folder");
+  const handeEditFolderModal = (data: Folder) => {
+    setFolderData(data);
+    setActiveFolderModal("edit");
     closeDropdown();
   };
 
@@ -130,79 +120,107 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     return [];
   };
 
+  // Função reutilizável para recarregar pastas
+  const refreshFolders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await getFolder(folderId ?? null);
+      const folderData = response.data;
+      setFolders(extractFolders(folderData));
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error
+          ? err.message
+          : "Falha ao carregar ficheiros. Tente novamente.";
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchFolder = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await getFolder(folderId ?? null);
-        console.log("pastas:", response);
-
-        const folderData = response.data;
-        console.log("pastas:", folderData);
-
-        setFolders(extractFolders(folderData));
-      } catch (err) {
-        const errorMsg =
-          err instanceof Error
-            ? err.message
-            : "Falha ao carregar utilizadores. Tente novamente.";
-        setError(errorMsg);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchFolder();
+    refreshFolders();
   }, [folderId]);
 
   const handleCreateFile = () => {
-    setActiveFileModal(true);
+    setActiveFileModal("create");
   };
 
   const handleCreateFolder = () => {
-    setActiveFolderModal(true);
+    setActiveFolderModal("create");
   };
 
   const handleFolderCreate = async (
     name: string,
     slug: string,
     description: string,
+    parentId?: string | null,
   ) => {
     try {
+      setError(null);
       const newFolderData: Partial<Folder> = { name, slug, description };
-      const result = await createFolder(newFolderData);
-      console.log("Pasta criada com sucesso:", result);
-      // TODO: Adicionar lógica para atualizar a lista de pastas na tabela
+
+      // Se parentId for definido, adiciona ao objeto
+      if (parentId) {
+        newFolderData.parent_id = parentId;
+      }
+
+      await createFolder(newFolderData);
+
+      // ✅ Feedback visual
+      const successMsg = "pasta criada com Sucesso!";
+      console.log(`✅ ${successMsg}`);
+      setSuccess(successMsg);
+
+      // Recarrega automaticamente a lista
+      await refreshFolders();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
     } catch (error) {
-      console.error("Erro ao criar a pasta:", error);
-      // TODO: Adicionar lógica para mostrar uma notificação de erro
+      const errorMsg =
+        error instanceof Error ? error.message : "Erro ao criar a pasta";
+      console.error("❌ Erro ao criar a pasta:", errorMsg);
+      setError(errorMsg);
+      throw error; // Re-throw para que o modal saiba do erro
     }
   };
 
   const handleUploadFiles = async (files: File[]) => {
-    if (!folderId) {
-      console.warn(
-        "folderId nao definido. Passe o ID da pasta para fazer upload.",
-      );
-      return;
-    }
-
     try {
-      const uploaded = await Promise.all(
+      setError(null);
+      // Upload com ou sem folderId (raiz se undefined)
+      await Promise.all(
         files.map((file) => uploadDocument(folderId, file)),
       );
-      console.log("Documentos carregados com sucesso:", uploaded);
-      // TODO: Atualizar lista de documentos na tabela
+
+      // ✅ Feedback visual
+      const isRootUpload = !folderId;
+      const fileNames = files.map(f => f.name).join(", ");
+      const successMsg = isRootUpload
+        ? `${files.length} ficheiro(s) carregado(s) para raiz! (folder_id=NULL): ${fileNames}`
+        : `${files.length} ficheiro(s) carregado(s) para pasta! (folder_id=${folderId}): ${fileNames}`;
+      console.log(`✅ ${successMsg}`);
+      setSuccess(successMsg);
+
+      // Recarrega automaticamente a lista
+      await refreshFolders();
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(null), 3000);
     } catch (error) {
-      console.error("Erro ao carregar ficheiros:", error);
-      // TODO: Mostrar notificacao de erro
+      const errorMsg =
+        error instanceof Error ? error.message : "Erro ao carregar ficheiros";
+      console.error("❌ Erro ao carregar ficheiros:", errorMsg);
+      setError(errorMsg);
+      throw error; // Re-throw para que o modal saiba do erro
     }
   };
 
   const closeDropdown = () => {
-    setOpenMenuId(false);
+    setOpenMenuId(null);
   };
 
   if (loading) {
@@ -294,6 +312,15 @@ function FolderTables2({ folderId }: FolderTables2Props) {
           </Button>
         </div>
       </div>
+
+      {/* Success Alert */}
+      {success && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-900 dark:bg-green-950">
+          <CheckCircleIcon className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0" />
+          <p className="text-sm text-green-700 dark:text-green-300">{success}</p>
+        </div>
+      )}
+
       <div className="max-w-full max-h-[calc(100vh-200px)] overflow-x-auto">
         <Table>
           <TableHeader className=" sticky border-gray-100 dark:border-gray-800 border-y">
@@ -352,7 +379,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                 <TableCell className="py-5 pr-2 gap-2 rounded-r-2xl text-gray-500 text-theme-sm dark:text-gray-400">
                   <div className="flex">
                     <button
-                      onClick={() => handeEditFolderModal(folder.id)}
+                      onClick={() => handeEditFolderModal(folder)}
                       className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
                     >
                       <PencilIcon className="size-4.5" />
@@ -376,14 +403,14 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                         className="w-40 p-2"
                       >
                         <DropdownItem
-                          onItemClick={() => handleShareItem(folder.id)}
+                          onItemClick={() => handleShareItem(folder)}
                           className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
                           <PaperAirplaneIcon className=" -rotate-45 -mt-0.5 size-4.5" />
                           Partilhar
                         </DropdownItem>
                         <DropdownItem
-                          onItemClick={() => handleSetPermission(folder.id)}
+                          onItemClick={() => handleSetPermission(folder)}
                           className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
                           <KeyIcon className="size-3.5 -rotate-180" />
@@ -391,7 +418,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                         </DropdownItem>
 
                         <DropdownItem
-                          onItemClick={() => handleRemoveItem(folder.id)}
+                          onItemClick={() => handleRemoveItem(folder)}
                           className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                         >
                           <TrashBinIcon />
@@ -409,41 +436,43 @@ function FolderTables2({ folderId }: FolderTables2Props) {
 
       {/* Modals */}
       <FileUploadModal
-        isOpen={activeFileModal}
-        onClose={() => setActiveFileModal(false)}
+        isOpen={activeFileModal === "create"}
+        onClose={() => setActiveFileModal(null)}
         onUpload={handleUploadFiles}
       />
 
       <CreateFolderModal
-        isOpen={activeFolderModal}
-        onClose={() => setActiveFolderModal(false)}
+        isOpen={activeFolderModal === "create"}
+        parentId={folderId}
+        onClose={() => setActiveFolderModal(null)}
         onSubmit={handleFolderCreate}
       />
 
       <EditFolderModal
-        isOpen={editItemModal == "folder" ? true : false}
-        onClose={() => setEditItemModal(null)}
+        isOpen={activeFolderModal === "edit"}
+        onClose={() => setActiveFolderModal(null)}
         onSubmit={handleCreateFolder}
-        folderId={itemId}
-      />
-
-      <PermissionModal
-        isOpen={itemPermissionModal}
-        onClose={() => setitemPermissionModal(false)}
-        itemId={itemId}
-      />
-
-      <RemoveModal
-        isOpen={removeItemModal}
-        onClose={() => setRemoveItemModal(false)}
-        itemId={itemId}
+        folderData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
       />
 
       <ShareModal
-        isOpen={shareItemModal}
-        onClose={() => setShareItemModal(false)}
-        itemId={itemId}
+        isOpen={activeItemModal === "share"}
+        onClose={() => setActiveItemModal(null)}
+        itemData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
       />
+
+      <PermissionModal
+        isOpen={activeItemModal === "permission"}
+        onClose={() => setActiveItemModal(null)}
+        itemData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
+      />
+
+      <RemoveModal
+        isOpen={activeItemModal === "remove"}
+        onClose={() => setActiveItemModal(null)}
+        itemData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
+      />
+
     </div>
   );
 }

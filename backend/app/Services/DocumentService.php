@@ -79,4 +79,57 @@ class DocumentService
             return $document;
         });
     }
+
+    /**
+     * Upload a new file to root (without folder) and create a document record.
+     *
+     * @param UploadedFile $file
+     * @param User $uploader
+     * @return Document
+     */
+    public function uploadFileToRoot(UploadedFile $file, User $uploader): Document
+    {
+        return DB::transaction(function () use ($file, $uploader) {
+            $year = now()->year;
+            
+            // 1. Calculate Sequence Number (global sequence for root documents)
+            $lastDoc = Document::whereNull('folder_id')
+                ->where('year', $year)
+                ->lockForUpdate()
+                ->orderBy('sequence_number', 'desc')
+                ->first();
+                
+            $sequence = $lastDoc ? $lastDoc->sequence_number + 1 : 1;
+            
+            // 2. Generate Reference Code (RaizY2.SEQ.filename)
+            $shortYear = substr($year, -2);
+            $paddedSequence = str_pad($sequence, 3, '0', STR_PAD_LEFT);
+            $cleanFilename = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+            
+            $referenceCode = sprintf(
+                'Raiz.%s.%s.%s',
+                $shortYear,
+                $paddedSequence,
+                $cleanFilename
+            );
+            
+            // 3. Store File Physically
+            $path = $file->store('documents', 'local');
+            
+            // 4. Create Document Record (without folder_id)
+            $document = Document::create([
+                'folder_id' => null, // Root document (no folder)
+                'name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'reference_code' => $referenceCode,
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'year' => $year,
+                'sequence_number' => $sequence,
+                'user_id' => $uploader->id,
+            ]);
+            
+            return $document;
+        });
+    }
 }

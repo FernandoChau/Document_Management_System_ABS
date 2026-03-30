@@ -49,6 +49,31 @@ class DocumentController extends Controller
         return response()->json(['message' => 'Upload successful', 'documents' => $documents], 201);
     }
 
+    /**
+     * Upload de ficheiros para raiz (sem pasta específica)
+     */
+    public function storeRoot(Request $request)
+    {
+        $user = $request->user();
+
+        // Batch upload support
+        $request->validate([
+            'files' => 'required|array',
+            'files.*' => 'file|max:51200', // 50MB max per file
+        ]);
+
+        $documents = [];
+
+        foreach ($request->file('files') as $file) {
+            // Upload para raiz (sem folder_id)
+            $doc = $this->documentService->uploadFileToRoot($file, $user);
+            AuditLogger::log($user, 'UPLOAD', $doc);
+            $documents[] = $doc;
+        }
+
+        return response()->json(['message' => 'Upload successful', 'documents' => $documents], 201);
+    }
+
     public function show(Document $document)
     {
         $user = auth()->user();

@@ -9,11 +9,13 @@ interface PermissionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (name: string, slug: string, description: string) => void;
-  itemId: string;
+  itemData: [id: string, name: string, slug: string, description: string];
 }
 
-function PermissionModal({isOpen, onClose, onSubmit, itemId}: PermissionModalProps) {
+function PermissionModal({isOpen, onClose, onSubmit, itemData}: PermissionModalProps) {
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
+  const [id, setId] = useState(itemData[0]);
+  const [name, setName] = useState(itemData[1]);
     
   return (
     <Modal
@@ -24,7 +26,7 @@ function PermissionModal({isOpen, onClose, onSubmit, itemId}: PermissionModalPro
       <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
         <div className="px-2 pr-14">
           <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-            Atribuir Permissões
+            Atribuir Permissões ao ficheiro <span className=" text-brand-500 font-medium">{ itemData[1] }</span>
           </h4>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
             Selecione o utilizador e as permissões depois clique em "Atribuir"

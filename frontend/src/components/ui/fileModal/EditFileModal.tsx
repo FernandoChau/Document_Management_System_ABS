@@ -5,7 +5,7 @@ import Input from "@/components/form/input/InputField";
 import TextArea from "@/components/form/input/TextArea";
 import Button from "../button/Button";
 
-interface EditFolderModalProps {
+interface EditFileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (name: string, slug: string, description: string) => void;
@@ -17,7 +17,7 @@ function EditFolderModal({
   onClose,
   onSubmit,
   folderData,
-}: EditFolderModalProps) {
+}: EditFileModalProps) {
   const [id, setId] = useState(folderData[0]);
   const [name, setName] = useState(folderData[1]);
   const [slug, setSlug] = useState(folderData[2]);

@@ -280,7 +280,7 @@ export const EditItemModal = ({
 
       {/* Botões de Ação */}
       <div className="flex gap-3 justify-end pt-6 border-t border-gray-200 dark:border-gray-700">
-        <Button onClick={onClose} variant="secondary" className="px-6">
+        <Button onClick={onClose} variant="outline" className="px-6">
           Cancelar
         </Button>
         <Button

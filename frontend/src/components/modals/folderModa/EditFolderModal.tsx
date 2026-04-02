@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Modal } from "../../ui/modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
@@ -18,6 +18,7 @@ function EditFolderModal({
   onSubmit,
   folderId,
 }: EditFolderModalProps) {
+  void folderId; // Mark as intentionally unused for now
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");

@@ -1,6 +1,8 @@
 import {
   createFolder,
+  Document,
   Folder,
+  getDocuments,
   getFolder,
   uploadDocument,
 } from "@/api/folder-document.service";
@@ -32,7 +34,7 @@ import {
   PaperAirplaneIcon,
   PencilIcon,
 } from "@heroicons/react/24/outline";
-import { FolderOpenIcon } from "@heroicons/react/24/solid";
+import { DocumentTextIcon, FolderOpenIcon } from "@heroicons/react/24/solid";
 import { AlertCircleIcon, CheckCircleIcon, DownloadIcon, FolderIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -46,8 +48,8 @@ function FolderTables2({ folderId }: FolderTables2Props) {
   const [activeItemModal, setActiveItemModal] = useState<"share" | "permission" | "remove" | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  const [documents, setDocuments] = useState<Document[]>([]);
   const [folderData, setFolderData] = useState<Folder | null>(null);
-  const [itemId, setItemId] = useState<string | null>(null);
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(false);
@@ -82,11 +84,16 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     setOpenMenuId(openMenuId === folderId ? null : folderId);
   };
 
+  const closeDropdown = () => {
+    setOpenMenuId(null);
+  };
+
   const extractFolders = (payload: unknown): Folder[] => {
     const asRecord = payload as Record<string, unknown>;
     const keys = Object.keys(asRecord);
     const allNumericKeys =
       keys.length > 0 && keys.every((k) => /^\d+$/.test(k));
+
 
     if (allNumericKeys) {
       return Object.values(asRecord) as Folder[];
@@ -120,15 +127,59 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     return [];
   };
 
+  const extractDocuments = (payload: unknown): Document[] => {
+    const asRecord = payload as Record<string, unknown>;
+    const keys = Object.keys(asRecord);
+    const allNumericKeys =
+      keys.length > 0 && keys.every((k) => /^\d+$/.test(k));
+
+    if (allNumericKeys) {
+      return Object.values(asRecord) as Document[];
+    }
+
+    const obj = payload as {
+      documents?: unknown;
+      data?: unknown;
+      children?: unknown;
+    };
+
+    if (obj.data && typeof obj.data === "object") {
+      const nested = obj.data as { documents?: unknown; children?: unknown };
+      if (Array.isArray(nested.documents)) {
+        return nested.documents as Document[];
+      }
+      if (Array.isArray(nested.children)) {
+        return nested.children as Document[];
+      }
+      if (nested && typeof nested === "object") {
+        const nestedRecord = nested as Record<string, unknown>;
+        const nestedKeys = Object.keys(nestedRecord);
+        const nestedNumericKeys =
+          nestedKeys.length > 0 && nestedKeys.every((k) => /^\d+$/.test(k));
+        if (nestedNumericKeys) {
+          return Object.values(nestedRecord) as Document[];
+        }
+      }
+    }
+
+    return [];
+  }
+
   // Função reutilizável para recarregar pastas
   const refreshFolders = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const response = await getFolder(folderId ?? null);
+      const response = await getFolder(folderId ?? undefined);
+      const responseDocuments = await getDocuments(folderId ?? undefined);
+
       const folderData = response.data;
       setFolders(extractFolders(folderData));
+      setDocuments(extractDocuments(responseDocuments));
+
+      console.log("✅ Pastas carregadas com sucesso:", extractFolders(folderData));
+      console.log("✅ Documentos carregados com sucesso:", extractDocuments(responseDocuments));
     } catch (err) {
       const errorMsg =
         err instanceof Error
@@ -219,8 +270,11 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     }
   };
 
-  const closeDropdown = () => {
-    setOpenMenuId(null);
+  const handleOpenItem = (itemId: string) => {
+    const folder = folders.find(f => f.id === itemId);
+    if (folder) {
+      console.log(`Abrir pasta: ${folder.name}`);
+    }
   };
 
   if (loading) {
@@ -374,9 +428,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                   </div>
                 </TableCell>
                 <TableCell className="py-3 w-5 pr-15 text-gray-500 text-theme-sm dark:text-gray-400">
-                  {formatDate(folder.created_at)}
+                  {folder.created_at ? formatDate(folder.created_at) : "—"}
                 </TableCell>
-                <TableCell className="py-5 pr-2 gap-2 rounded-r-2xl text-gray-500 text-theme-sm dark:text-gray-400">
+                <TableCell className="py-5 pr-2 flex items-center gap-2 rounded-r-2xl text-gray-500 text-theme-sm dark:text-gray-400">
                   <div className="flex">
                     <button
                       onClick={() => handeEditFolderModal(folder)}
@@ -430,6 +484,88 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                 </TableCell>
               </TableRow>
             ))}
+
+            {/* ============= SEÇÃO DE DOCUMENTOS ============= */}
+            {documents.length > 0 && (
+              <>
+                {documents.map((document) => (
+                  <TableRow
+                    key={document.id}
+                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30 "
+                  >
+                    <TableCell className="py-3 rounded-l-2xl">
+                      <div
+                        onDoubleClick={() => handleOpenItem(document.id)}
+                        className="flex items-center gap-2"
+                      >
+                        <div className="h-[50px] w-[50px] flex items-center justify-center overflow-hidden rounded-md">
+                            <DocumentTextIcon className="h-8 w-8 text-brand-400 dark:text-yellow-300" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-700 text-theme-m dark:text-white/80">
+                            {document.name}
+                            {/* product.name */}
+                          </p>
+                          <p className="text-gray-500 text-theme-xs dark:text-gray-400">
+                            Ref: {document.reference_code}
+                            {/* Ref: product.variants */}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3 w-5 pr-15 text-gray-500 text-theme-sm dark:text-gray-400">
+                      {document.created_at ? formatDate(document.created_at) : "—"}
+                    </TableCell>
+                    <TableCell className="py-5 pr-2 flex items-center justify-end gap-2 rounded-r-2xl text-gray-500 text-theme-sm dark:text-gray-400">
+                      <div className="flex">
+                        <button className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
+                          <EyeIcon className="size-5" />
+                        </button>
+                        <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
+                          <DownloadIcon className="size-4.5" />
+                        </button>
+                        <div className="mt-1">
+                          <button
+                            className="dropdown-toggle"
+                            onClick={() => toggleDropdownFolder(document.id)}
+                          >
+                            <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
+                          </button>
+                          <Dropdown
+                            isOpen={openMenuId === document.id}
+                            onClose={closeDropdown}
+                            className="w-40 p-2"
+                          >
+                            <DropdownItem
+                              onItemClick={() => handleShareItem(document)}
+                              className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                            >
+                              <PaperAirplaneIcon className=" -rotate-45 -mt-0.5 size-4.5" />
+                              Partilhar
+                            </DropdownItem>
+                            <DropdownItem
+                              onItemClick={() => handleSetPermission(document)}
+                              className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                            >
+                              <KeyIcon className="size-3.5 -rotate-180" />
+                              Permissões
+                            </DropdownItem>
+
+                            <DropdownItem
+                              onItemClick={() => handleRemoveItem(document)}
+                              className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                            >
+                              <TrashBinIcon />
+                              Remover
+                            </DropdownItem>
+                          </Dropdown>
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </>
+            )}
           </TableBody>
         </Table>
       </div>
@@ -439,13 +575,13 @@ function FolderTables2({ folderId }: FolderTables2Props) {
         isOpen={activeFileModal === "create"}
         onClose={() => setActiveFileModal(null)}
         onUpload={handleUploadFiles}
+        folderId={folderId}
       />
 
       <CreateFolderModal
         isOpen={activeFolderModal === "create"}
-        parentId={folderId}
         onClose={() => setActiveFolderModal(null)}
-        onSubmit={handleFolderCreate}
+        onSubmit={(name, slug, description) => handleFolderCreate(name, slug, description, folderId)}
       />
 
       <EditFolderModal
@@ -459,18 +595,32 @@ function FolderTables2({ folderId }: FolderTables2Props) {
         isOpen={activeItemModal === "share"}
         onClose={() => setActiveItemModal(null)}
         itemData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
+        itemId={folderData?.id || ""}
+        onSubmit={async (name, slug, description) => {
+          console.log("Handle share:", { name, slug, description, itemId: folderData?.id });
+          setActiveItemModal(null);
+        }}
       />
 
       <PermissionModal
         isOpen={activeItemModal === "permission"}
         onClose={() => setActiveItemModal(null)}
         itemData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
+        onSubmit={async (name, slug, description) => {
+          console.log("Handle permission:", { name, slug, description, itemId: folderData?.id });
+          setActiveItemModal(null);
+        }}
       />
 
       <RemoveModal
         isOpen={activeItemModal === "remove"}
         onClose={() => setActiveItemModal(null)}
         itemData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
+        folderId={folderId || ""}
+        onSubmit={async (name, slug, description) => {
+          console.log("Handle remove:", { name, slug, description, itemId: folderData?.id, folderId });
+          setActiveItemModal(null);
+        }}
       />
 
     </div>

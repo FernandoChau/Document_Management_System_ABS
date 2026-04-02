@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Modal } from "../ui/modal";
 import Label from "../form/Label";
 import Input from "../form/input/InputField";
@@ -18,8 +18,10 @@ function ShareModal({
   onSubmit,
   itemData
 }: ShareItemModalProps) {
-  const [id, setId] = useState(itemData[0]);
+  void onSubmit; // Mark as intentionally unused
+  const [id] = useState(itemData[0]); // Unused for now
   const [name, setName] = useState(itemData[1]);
+  void id;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[700px] m-4">
@@ -27,7 +29,7 @@ function ShareModal({
         <div className="px-2 pr-14">
           <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
             Partilhar Ficheiro{" "}
-            <span className=" text-brand-500 font-medium">{ itemData[1] }</span>
+            <span className=" text-brand-500 font-medium">{itemData[1]}</span>
           </h4>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
             Altere apenas o necessario a abaixo e clique em "Editar" para

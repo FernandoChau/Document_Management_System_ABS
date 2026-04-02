@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Modal } from "../ui/modal";
 import Label from "../form/Label";
 import Select from "../form/Select";
@@ -12,11 +12,13 @@ interface PermissionModalProps {
   itemData: [id: string, name: string, slug: string, description: string];
 }
 
-function PermissionModal({isOpen, onClose, onSubmit, itemData}: PermissionModalProps) {
+function PermissionModal({ isOpen, onClose, onSubmit, itemData }: PermissionModalProps) {
+  void onSubmit; // Mark as intentionally unused
   const [selectedValues, setSelectedValues] = useState<string[]>([]);
-  const [id, setId] = useState(itemData[0]);
-  const [name, setName] = useState(itemData[1]);
-    
+  const [id] = useState(itemData[0]); // Unused for now
+  const [name] = useState(itemData[1]); // Unused for now
+  void id, void name;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -26,7 +28,7 @@ function PermissionModal({isOpen, onClose, onSubmit, itemData}: PermissionModalP
       <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
         <div className="px-2 pr-14">
           <h4 className="mb-2 text-2xl font-semibold text-gray-800 dark:text-white/90">
-            Atribuir Permissões ao ficheiro <span className=" text-brand-500 font-medium">{ itemData[1] }</span>
+            Atribuir Permissões ao ficheiro <span className=" text-brand-500 font-medium">{itemData[1]}</span>
           </h4>
           <p className="mb-6 text-sm text-gray-500 dark:text-gray-400 lg:mb-7">
             Selecione o utilizador e as permissões depois clique em "Atribuir"
@@ -50,7 +52,7 @@ function PermissionModal({isOpen, onClose, onSubmit, itemData}: PermissionModalP
                     { value: "5", label: "Helder" },
                   ]}
                   placeholder="Selecione o role"
-                  // onChange={handleSelectChange}
+                  onChange={() => { }}
                   className="dark:bg-dark-900"
                 />
               </div>
@@ -60,6 +62,7 @@ function PermissionModal({isOpen, onClose, onSubmit, itemData}: PermissionModalP
                   Utilizador <span className="text-red-500">*</span>
                 </Label>
                 <MultiSelect
+                  label="Permissões"
                   options={[
                     { value: "view", text: "Ver" },
                     { value: "edit", text: "Editar" },

@@ -10,9 +10,10 @@ interface DeleteItemModalProps {
   onSubmit: (name: string, slug: string, description: string) => void;
   folderId: string;
   itemData: [id: string, name: string, slug: string, description: string];
+  itemType?: String | null;
 }
 
-function RemoveModal({ isOpen, onClose, onSubmit, itemData }: DeleteItemModalProps) {
+function RemoveModal({ isOpen, onClose, onSubmit, itemData, itemType }: DeleteItemModalProps) {
   void onSubmit; // Mark as intentionally unused
   const [id] = useState(itemData[0]); // Unused for now
   const [name, setName] = useState(itemData[1]);

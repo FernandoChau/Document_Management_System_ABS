@@ -5,6 +5,8 @@ import {
   getDocuments,
   getFolder,
   uploadDocument,
+  downloadFolder,
+  downloadDocument,
 } from "@/api/folder-document.service";
 import PermissionModal from "@/components/modals/PermissionModal";
 import RemoveModal from "@/components/modals/RemoveModal";
@@ -47,29 +49,85 @@ function FolderTables2({ folderId }: FolderTables2Props) {
   const [activeFileModal, setActiveFileModal] = useState<"create" | "edit" | null>(null);
   const [activeItemModal, setActiveItemModal] = useState<"share" | "permission" | "remove" | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [itemType, setItemType] = useState<string | null>(null);
 
   const [documents, setDocuments] = useState<Document[]>([]);
-  const [folderData, setFolderData] = useState<Folder | null>(null);
+  const [folderData, setFolderData] = useState<Folder | Document | null>(null);
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
-  const handleShareItem = (data: Folder) => {
-    setFolderData(data);
+  const handleShareItem = (data: Folder | Document, fileType: string) => {
+    setItemType(fileType);
+    setFolderData(data as Folder);
     setActiveItemModal("share");
     closeDropdown();
   };
 
-  const handleRemoveItem = (data: Folder) => {
-    setFolderData(data);
+  const handleRemoveItem = (data: Folder | Document, fileType: string) => {
+    setItemType(fileType);
+    setFolderData(data as Folder);
     setActiveItemModal("remove");
     closeDropdown();
   };
 
-  const handleSetPermission = (data: Folder) => {
-    setFolderData(data);
+  const handleDownloadFolder = async (folder: Folder) => {
+    if (downloadingId) return; // Prevent multiple downloads
+
+    setDownloadingId(folder.id);
+    try {
+      const blob = await downloadFolder(folder.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = window.document.createElement("a");
+      link.href = url;
+      link.download = `${folder.name}.zip`;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Erro ao fazer download da pasta";
+      setError(errorMsg);
+      console.error("Download folder error:", err);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleDownloadDocument = async (doc: Document) => {
+    if (downloadingId) return; // Prevent multiple downloads
+
+    setDownloadingId(doc.id);
+    try {
+      const blob = await downloadDocument(doc.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = window.document.createElement("a");
+      link.href = url;
+      link.download = doc.name;
+      window.document.body.appendChild(link);
+      link.click();
+      window.document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      const errorMsg =
+        err instanceof Error ? err.message : "Erro ao fazer download do ficheiro";
+      setError(errorMsg);
+      console.error("Download document error:", err);
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleSetPermission = (data: Folder | Document, fileType: string) => {
+    // Normalize: "file" -> "document", "folder" -> "folder"
+    const normalizedType = fileType === "file" ? "document" : "folder";
+    console.log("[handleSetPermission] Data received:", { data, fileType, normalizedType });
+    setItemType(normalizedType);
+    setFolderData(data); // ✅ No cast - allows Folder | Document
     setActiveItemModal("permission")
     closeDropdown();
   };
@@ -441,8 +499,17 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                     <button className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
                       <EyeIcon className="size-5" />
                     </button>
-                    <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
-                      <DownloadIcon className="size-4.5" />
+                    <button
+                      onClick={() => handleDownloadFolder(folder)}
+                      disabled={downloadingId === folder.id}
+                      className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="Fazer download da pasta como ZIP"
+                    >
+                      {downloadingId === folder.id ? (
+                        <div className="animate-spin h-4 w-4 border-2 border-brand-500 border-t-transparent rounded-full" />
+                      ) : (
+                        <DownloadIcon className="size-4.5" />
+                      )}
                     </button>
                     <div className="mt-1">
                       <button
@@ -457,14 +524,14 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                         className="w-40 p-2"
                       >
                         <DropdownItem
-                          onItemClick={() => handleShareItem(folder)}
+                          onItemClick={() => handleShareItem(folder, "folder")}
                           className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
                           <PaperAirplaneIcon className=" -rotate-45 -mt-0.5 size-4.5" />
                           Partilhar
                         </DropdownItem>
                         <DropdownItem
-                          onItemClick={() => handleSetPermission(folder)}
+                          onItemClick={() => handleSetPermission(folder, "folder")}
                           className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                         >
                           <KeyIcon className="size-3.5 -rotate-180" />
@@ -472,7 +539,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                         </DropdownItem>
 
                         <DropdownItem
-                          onItemClick={() => handleRemoveItem(folder)}
+                          onItemClick={() => handleRemoveItem(folder, "folder")}
                           className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                         >
                           <TrashBinIcon />
@@ -499,7 +566,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                         className="flex items-center gap-2"
                       >
                         <div className="h-[50px] w-[50px] flex items-center justify-center overflow-hidden rounded-md">
-                            <DocumentTextIcon className="h-8 w-8 text-brand-400 dark:text-yellow-300" />
+                          <DocumentTextIcon className="h-8 w-8 text-brand-400 dark:text-yellow-300" />
                         </div>
                         <div>
                           <p className="font-medium text-gray-700 text-theme-m dark:text-white/80">
@@ -521,8 +588,17 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                         <button className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
                           <EyeIcon className="size-5" />
                         </button>
-                        <button className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
-                          <DownloadIcon className="size-4.5" />
+                        <button
+                          onClick={() => handleDownloadDocument(document)}
+                          disabled={downloadingId === document.id}
+                          className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Fazer download do ficheiro"
+                        >
+                          {downloadingId === document.id ? (
+                            <div className="animate-spin h-4 w-4 border-2 border-brand-500 border-t-transparent rounded-full" />
+                          ) : (
+                            <DownloadIcon className="size-4.5" />
+                          )}
                         </button>
                         <div className="mt-1">
                           <button
@@ -537,14 +613,14 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                             className="w-40 p-2"
                           >
                             <DropdownItem
-                              onItemClick={() => handleShareItem(document)}
+                              onItemClick={() => handleShareItem(document, "file")}
                               className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                             >
                               <PaperAirplaneIcon className=" -rotate-45 -mt-0.5 size-4.5" />
                               Partilhar
                             </DropdownItem>
                             <DropdownItem
-                              onItemClick={() => handleSetPermission(document)}
+                              onItemClick={() => handleSetPermission(document, "file")}
                               className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
                             >
                               <KeyIcon className="size-3.5 -rotate-180" />
@@ -552,7 +628,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                             </DropdownItem>
 
                             <DropdownItem
-                              onItemClick={() => handleRemoveItem(document)}
+                              onItemClick={() => handleRemoveItem(document, "file")}
                               className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                             >
                               <TrashBinIcon />
@@ -588,39 +664,42 @@ function FolderTables2({ folderId }: FolderTables2Props) {
         isOpen={activeFolderModal === "edit"}
         onClose={() => setActiveFolderModal(null)}
         onSubmit={handleCreateFolder}
-        folderData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
+        folderData={folderData && "slug" in folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description || ""] : ["", "", "", ""]}
       />
 
       <ShareModal
         isOpen={activeItemModal === "share"}
         onClose={() => setActiveItemModal(null)}
-        itemData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
+        itemData={folderData ? [folderData.id, folderData.name, "", ""] : ["", "", "", ""]}
         itemId={folderData?.id || ""}
-        onSubmit={async (name, slug, description) => {
-          console.log("Handle share:", { name, slug, description, itemId: folderData?.id });
+        itemType={itemType}
+        onSuccess={() => {
           setActiveItemModal(null);
+          refreshFolders();
         }}
       />
 
       <PermissionModal
         isOpen={activeItemModal === "permission"}
         onClose={() => setActiveItemModal(null)}
-        itemData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
-        onSubmit={async (name, slug, description) => {
-          console.log("Handle permission:", { name, slug, description, itemId: folderData?.id });
+        itemData={folderData ? [folderData.id, folderData.name, "slug", ""] : ["", "", "", ""]}
+        itemType={itemType as "folder" | "document" | null}
+        onSuccess={() => {
           setActiveItemModal(null);
+          refreshFolders();
         }}
       />
 
       <RemoveModal
         isOpen={activeItemModal === "remove"}
         onClose={() => setActiveItemModal(null)}
-        itemData={folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description] : ["", "", "", ""]}
-        folderId={folderId || ""}
-        onSubmit={async (name, slug, description) => {
-          console.log("Handle remove:", { name, slug, description, itemId: folderData?.id, folderId });
+        itemData={folderData ? [folderData.id, folderData.name, "", ""] : ["", "", "", ""]}
+        itemType={itemType}
+        onSubmit={() => {
           setActiveItemModal(null);
+          refreshFolders();
         }}
+        folderId={folderId || ""}
       />
 
     </div>

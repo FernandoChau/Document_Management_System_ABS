@@ -226,3 +226,88 @@ export const updateDocument = async (
   const response = await api.put(`/documents/${documentId}`, data);
   return response.data.data || response.data;
 };
+
+/**
+ * Download de uma pasta como ZIP
+ */
+export const downloadFolder = async (folderId: string): Promise<Blob> => {
+  const response = await api.get(`/pastas/${folderId}/download`, {
+    responseType: "blob",
+  });
+  return response.data as Blob;
+};
+
+/**
+ * Download de um documento
+ */
+export const downloadDocument = async (documentId: string): Promise<Blob> => {
+  const response = await api.get(`/documentos/${documentId}/download`, {
+    responseType: "blob",
+  });
+  return response.data as Blob;
+};
+
+/**
+ * Interface para solicitar link de compartilhamento
+ */
+export interface ShareLinkRequest {
+  shareable_type: "Document" | "Folder";
+  shareable_id: string;
+  expires_in_hours?: number;
+  max_downloads?: number;
+  password?: string;
+}
+
+/**
+ * Interface para resposta de link de compartilhamento
+ */
+export interface ShareLinkResponse {
+  id: string;
+  token: string;
+  shareable_type: "Document" | "Folder";
+  shareable_id: string;
+  created_by: string;
+  expires_at?: string;
+  password?: string;
+  max_downloads?: number;
+  downloads_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Criar um link de compartilhamento para pasta ou documento
+ */
+export const createShareLink = async (
+  data: ShareLinkRequest,
+): Promise<ShareLinkResponse> => {
+  const response = await api.post<{ data: ShareLinkResponse }>(
+    "/compartilhamentos",
+    data,
+  );
+  return response.data.data || response.data;
+};
+
+/**
+ * Apagar um link de compartilhamento
+ */
+export const deleteShareLink = async (shareLinkId: string): Promise<void> => {
+  await api.delete(`/compartilhamentos/${shareLinkId}`);
+};
+
+/**
+ * Download de um documento via link de compartilhamento
+ */
+export const downloadViaShareLink = async (
+  token: string,
+  password?: string,
+): Promise<Blob> => {
+  const response = await api.get(
+    `/public/share/${token}/download`,
+    {
+      params: password ? { password } : undefined,
+      responseType: "blob",
+    },
+  );
+  return response.data as Blob;
+};

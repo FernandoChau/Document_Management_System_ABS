@@ -45,9 +45,10 @@ class FolderController extends Controller
 
         // Get roots user has access to
         $roots = $this->authorizationService->getViewableFolders($user)
-            ->where('is_root', true);
+            ->where('is_root', true)
+            ->values();
 
-        return response()->json($roots);
+        return response()->json(['data' => $roots]);
     }
 
     public function store(Request $request)

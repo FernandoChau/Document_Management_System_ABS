@@ -18,7 +18,9 @@ use App\Http\Controllers\Api\DocumentContentController;
 use App\Http\Controllers\Api\ShareLinkController;
 use App\Http\Controllers\Api\AuditLogController;
 use App\Http\Controllers\Api\FolderPermissionController;
+use App\Http\Controllers\Api\DocumentPermissionController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\Api\GroupController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -106,6 +108,16 @@ Route::prefix('/')->group(function () {
                 Route::delete('/', [DocumentContentController::class, 'destroy']);
                 Route::get('/status', [DocumentContentController::class, 'status']);
             });
+
+            // Document Permissions
+            Route::prefix('{document}/permissoes')->group(function () {
+                Route::get('/', [DocumentPermissionController::class, 'index']);
+                Route::post('/', [DocumentPermissionController::class, 'store']);
+                Route::get('/{permission}', [DocumentPermissionController::class, 'show']);
+                Route::put('/{permission}', [DocumentPermissionController::class, 'update']);
+                Route::delete('/{permission}', [DocumentPermissionController::class, 'destroy']);
+                Route::get('/usuario/{userId}/check', [DocumentPermissionController::class, 'check']);
+            });
         });
 
         // ==================== DOCUMENT CONTENT SEARCH ====================
@@ -149,6 +161,15 @@ Route::prefix('/')->group(function () {
             Route::put('/{id}', [UserController::class, 'update']);                 //checked
             Route::put('/{id}/desativar', [UserController::class, 'deactivate']);   //checked
             Route::put('/{id}/ativar', [UserController::class, 'activate']);        //checked
+        });
+
+        // ==================== GROUPS ====================
+        Route::prefix('grupos')->group(function () {
+            Route::get('/', [GroupController::class, 'index']);
+            Route::post('/', [GroupController::class, 'store']);
+            Route::get('/{group}', [GroupController::class, 'show']);
+            Route::put('/{group}', [GroupController::class, 'update']);
+            Route::delete('/{group}', [GroupController::class, 'destroy']);
         });
     });
 });

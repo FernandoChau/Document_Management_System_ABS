@@ -114,6 +114,7 @@ class PermissionResolver
                 'can_upload' => $userPerm->can_upload,
                 'can_share' => $userPerm->can_share,
                 'can_download' => $userPerm->can_download,
+                'can_manage_permissions' => $userPerm->can_manage_permissions,
             ];
         }
 
@@ -161,6 +162,7 @@ class PermissionResolver
                 'can_upload' => isset($groupPerm->can_upload) ? (bool) $groupPerm->can_upload : false,
                 'can_share' => (bool) $groupPerm->can_share,
                 'can_download' => (bool) $groupPerm->can_download,
+                'can_manage_permissions' => isset($groupPerm->can_manage_permissions) ? (bool) $groupPerm->can_manage_permissions : false,
             ];
         }
 
@@ -189,6 +191,7 @@ class PermissionResolver
                 'can_upload' => $userPerm->can_upload,
                 'can_share' => $userPerm->can_share,
                 'can_download' => $userPerm->can_download,
+                'can_manage_permissions' => $userPerm->can_manage_permissions,
             ];
         }
 
@@ -228,6 +231,7 @@ class PermissionResolver
                 'can_delete' => $userPerm->can_delete,
                 'can_download' => $userPerm->can_download,
                 'can_share' => $userPerm->can_share,
+                'can_manage_permissions' => $userPerm->can_manage_permissions,
             ];
         }
 
@@ -275,6 +279,7 @@ class PermissionResolver
             'can_upload' => true,
             'can_share' => true,
             'can_download' => true,
+            'can_manage_permissions' => true,
         ];
     }
 
@@ -292,6 +297,7 @@ class PermissionResolver
             'can_upload' => false,
             'can_share' => false,
             'can_download' => false,
+            'can_manage_permissions' => false,
         ];
     }
 }

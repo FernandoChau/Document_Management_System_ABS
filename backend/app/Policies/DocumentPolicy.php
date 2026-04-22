@@ -5,14 +5,23 @@ namespace App\Policies;
 use App\Models\User;
 use App\Models\Document;
 use App\Services\AuthorizationService;
+use App\Services\DocumentValidator;
+use App\Services\FolderValidator;
 
 class DocumentPolicy
 {
     protected AuthorizationService $authorizationService;
+    protected DocumentValidator $documentValidator;
+    protected FolderValidator $folderValidator;
 
-    public function __construct(AuthorizationService $authorizationService)
-    {
+    public function __construct(
+        AuthorizationService $authorizationService,
+        DocumentValidator $documentValidator,
+        FolderValidator $folderValidator
+    ) {
         $this->authorizationService = $authorizationService;
+        $this->documentValidator = $documentValidator;
+        $this->folderValidator = $folderValidator;
     }
 
     /**
@@ -20,6 +29,23 @@ class DocumentPolicy
      */
     public function view(User $user, Document $document): bool
     {
+        // Guard: Check document is not deleted
+        if ($this->isDeleted($document)) {
+            return false;
+        }
+
+        // Guard: Check parent folder exists and is not deleted
+        if (!$document->folder || $document->folder->trashed()) {
+            return false;
+        }
+
+        // Guard: Check ancestor chain integrity
+        try {
+            $this->folderValidator->validateAncestorChainIntegrity($document->folder);
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+
         return $this->authorizationService->canViewDocument($user, $document);
     }
 
@@ -28,6 +54,23 @@ class DocumentPolicy
      */
     public function download(User $user, Document $document): bool
     {
+        // Guard: Check document is not deleted
+        if ($this->isDeleted($document)) {
+            return false;
+        }
+
+        // Guard: Check parent folder exists and is not deleted
+        if (!$document->folder || $document->folder->trashed()) {
+            return false;
+        }
+
+        // Guard: Check ancestor chain integrity
+        try {
+            $this->folderValidator->validateAncestorChainIntegrity($document->folder);
+        } catch (\InvalidArgumentException $e) {
+            return false;
+        }
+
         return $this->authorizationService->canDownloadDocument($user, $document);
     }
 
@@ -36,6 +79,16 @@ class DocumentPolicy
      */
     public function delete(User $user, Document $document): bool
     {
+        // Guard: Check document is not already deleted
+        if ($this->isDeleted($document)) {
+            return false;
+        }
+
+        // Guard: Check parent folder exists
+        if (!$document->folder) {
+            return false;
+        }
+
         return $this->authorizationService->canDeleteDocument($user, $document);
     }
 
@@ -44,7 +97,22 @@ class DocumentPolicy
      */
     public function restore(User $user, Document $document): bool
     {
-        return $user->isAdmin();
+        // Guard: Only admins can restore
+        if (!$user->isAdmin()) {
+            return false;
+        }
+
+        // Guard: Document must be deleted
+        if (!$this->isDeleted($document)) {
+            return false;
+        }
+
+        // Guard: Parent folder must exist and not be deleted
+        if (!$document->folder || $document->folder->trashed()) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -52,7 +120,17 @@ class DocumentPolicy
      */
     public function forceDelete(User $user, Document $document): bool
     {
-        return $user->isAdmin();
+        // Guard: Only admins can force delete
+        if (!$user->isAdmin()) {
+            return false;
+        }
+
+        // Guard: Document must be deleted
+        if (!$this->isDeleted($document)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -60,6 +138,16 @@ class DocumentPolicy
      */
     public function share(User $user, Document $document): bool
     {
+        // Guard: Check document is not deleted
+        if ($this->isDeleted($document)) {
+            return false;
+        }
+
+        // Guard: Check parent folder exists and is not deleted
+        if (!$document->folder || $document->folder->trashed()) {
+            return false;
+        }
+
         return $this->authorizationService->canShareDocument($user, $document);
     }
 
@@ -68,6 +156,24 @@ class DocumentPolicy
      */
     public function updateMetadata(User $user, Document $document): bool
     {
+        // Guard: Check document is not deleted
+        if ($this->isDeleted($document)) {
+            return false;
+        }
+
+        // Guard: Check parent folder exists
+        if (!$document->folder) {
+            return false;
+        }
+
         return $this->authorizationService->canUpdateDocumentMetadata($user, $document);
+    }
+
+    /**
+     * Check if document is deleted (soft delete)
+     */
+    protected function isDeleted(Document $document): bool
+    {
+        return $document->trashed();
     }
 }

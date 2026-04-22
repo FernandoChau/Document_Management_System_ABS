@@ -30,6 +30,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prepend(
             \App\Http\Middleware\EnableCorsWithCredentials::class
         );
+
+        // ✅ Registar alias para o middleware de validação de ficheiros
+        $middleware->alias([
+            'validate.file.access' => \App\Http\Middleware\ValidateFileAccessMiddleware::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

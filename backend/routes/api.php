@@ -65,7 +65,7 @@ Route::prefix('/')->group(function () {
         });
 
         // ==================== FOLDERS ====================
-        Route::prefix('pastas')->group(function () {
+        Route::prefix('pastas')->middleware('validate.file.access')->group(function () {
             Route::get('/', [FolderController::class, 'index']); // List root or children
             Route::post('/', [FolderController::class, 'store']); // Create folder
             Route::get('/{folder}', [FolderController::class, 'show']);
@@ -90,7 +90,7 @@ Route::prefix('/')->group(function () {
         });
 
         // ==================== DOCUMENTS ====================
-        Route::prefix('documentos')->group(function () {
+        Route::prefix('documentos')->middleware('validate.file.access')->group(function () {
             Route::get('/', [DocumentController::class, 'index']);
             Route::post('/', [DocumentController::class, 'storeRoot']); // Root upload (novo)
             Route::get('/{document}', [DocumentController::class, 'show']); // View

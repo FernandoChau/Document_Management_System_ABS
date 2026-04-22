@@ -21,6 +21,7 @@ class FolderPermission extends Model
         'can_upload',
         'can_share',
         'can_download',
+        'can_manage_permissions',
     ];
 
     protected $casts = [
@@ -30,6 +31,7 @@ class FolderPermission extends Model
         'can_upload' => 'boolean',
         'can_share' => 'boolean',
         'can_download' => 'boolean',
+        'can_manage_permissions' => 'boolean',
     ];
 
     protected $keyType = 'string';
@@ -87,6 +89,30 @@ class FolderPermission extends Model
             'can_upload' => $this->can_upload,
             'can_share' => $this->can_share,
             'can_download' => $this->can_download,
+            'can_manage_permissions' => $this->can_manage_permissions,
         ]);
+    }
+
+    /**
+     * Check if view permission is required before other operations
+     */
+    public function requiresViewPermission(): bool
+    {
+        return !$this->can_view && (
+            $this->can_update_metadata ||
+            $this->can_delete ||
+            $this->can_upload ||
+            $this->can_share ||
+            $this->can_download ||
+            $this->can_manage_permissions
+        );
+    }
+
+    /**
+     * Check if this permission grants management rights
+     */
+    public function canManagePermissions(): bool
+    {
+        return $this->can_manage_permissions === true;
     }
 }

@@ -6,20 +6,31 @@ use App\Http\Controllers\Controller;
 use App\Models\ShareLink;
 use App\Models\Document;
 use App\Models\Folder;
+use App\Services\AuditService;
 use App\Services\AuditLogger;
 use App\Services\FolderZipService;
+use App\Services\PermissionValidator;
+use App\Exceptions\PermissionDeniedException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class ShareLinkController extends Controller
 {
     protected $folderZipService;
+    protected $permissionValidator;
+    protected $auditService;
 
-    public function __construct(FolderZipService $folderZipService)
-    {
+    public function __construct(
+        FolderZipService $folderZipService,
+        PermissionValidator $permissionValidator,
+        AuditService $auditService
+    ) {
         $this->folderZipService = $folderZipService;
+        $this->permissionValidator = $permissionValidator;
+        $this->auditService = $auditService;
     }
     /**
      * Listar links de compartilhamento do usuário
@@ -37,48 +48,55 @@ class ShareLinkController extends Controller
 
     /**
      * Criar novo link de compartilhamento
+     * FIRST STEP: Validate permissions before creating share link
      */
     public function store(Request $request)
     {
+        $user = auth()->user();
+
         $request->validate([
             'shareable_type' => 'required|in:Document,Folder',
             'shareable_id' => 'required|uuid',
-            'expires_in_hours' => 'nullable|integer|min:1|max:720',
-            'password' => 'nullable|string|min:6',
-            'max_downloads' => 'nullable|integer|min:1',
+            'expires_at' => 'nullable|date|after:now',
+            'password' => 'nullable|string|min:6|max:255',
         ]);
 
-        // Validar que o recurso existe e pertence ao usuário
+        // Get resource
         $resourceClass = "App\\Models\\" . $request->shareable_type;
         $resource = $resourceClass::findOrFail($request->shareable_id);
 
-        // Check authorization
-        if (!Gate::allows('view', $resource)) {
-            return response()->json(['error' => 'Forbidden'], 403);
+        // FIRST STEP: Check permission to share
+        try {
+            if ($request->shareable_type === 'Folder') {
+                $this->permissionValidator->validateFolderAction($user, $resource, 'share');
+            } else {
+                $this->permissionValidator->validateDocumentAction($user, $resource, 'share');
+            }
+        } catch (PermissionDeniedException $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
         }
 
-        $expiresAt = null;
-        if ($request->expires_in_hours) {
-            $expiresAt = Carbon::now()->addHours($request->expires_in_hours);
-        }
-
+        // Create share link
         $shareLink = ShareLink::create([
             'token' => Str::random(60),
             'shareable_type' => $request->shareable_type,
             'shareable_id' => $request->shareable_id,
-            'expires_at' => $expiresAt,
-            'password' => $request->password ? bcrypt($request->password) : null,
-            'max_downloads' => $request->max_downloads,
-            'downloads_count' => 0,
-            'created_by' => auth()->id(),
+            'expires_at' => $request->expires_at,
+            'password' => $request->password ? hash('sha256', $request->password) : null,
+            'created_by' => $user->id,
         ]);
 
-        AuditLogger::log(auth()->user(), 'SHARE', $resource, [
+        // Use AuditService for logging
+        $this->auditService->logShare($user, $resource, [
             'share_link_id' => $shareLink->id,
-            'expires_at' => $expiresAt,
+            'expires_at' => $request->expires_at,
         ]);
 
-        return response()->json($shareLink, 201);
+        return response()->json([
+            'token' => $shareLink->token,
+            'url' => url("/api/compartilhamentos/{$shareLink->token}"),
+            'expires_at' => $shareLink->expires_at,
+        ], 201);
     }
 
     /**
@@ -156,7 +174,8 @@ class ShareLinkController extends Controller
             // Incrementar contador de downloads
             $shareLink->increment('downloads_count');
 
-            AuditLogger::log(null, 'DOWNLOAD', $document, [
+            // Use AuditService for logging (null user for public download)
+            $this->auditService->logDownload(null, $document, [
                 'via_share_link' => $shareLink->id,
                 'ip' => $request->ip(),
             ]);
@@ -185,7 +204,8 @@ class ShareLinkController extends Controller
                 // Incrementar contador de downloads
                 $shareLink->increment('downloads_count');
 
-                AuditLogger::log(null, 'DOWNLOAD', $folder, [
+                // Use AuditService for logging (null user for public download)
+                $this->auditService->logDownload(null, $folder, [
                     'via_share_link' => $shareLink->id,
                     'ip' => $request->ip(),
                     'type' => 'zip',
@@ -228,7 +248,7 @@ class ShareLinkController extends Controller
         }
 
         $shareLink->save();
-        AuditLogger::log(auth()->user(), 'UPDATE_METADATA', $shareLink);
+        $this->auditService->logUpdateMetadata(auth()->user(), $shareLink, [], $shareLink->toArray());
 
         return response()->json($shareLink);
     }
@@ -244,7 +264,7 @@ class ShareLinkController extends Controller
         }
 
         $shareLink->delete();
-        AuditLogger::log(auth()->user(), 'SOFT_DELETE', $shareLink);
+        $this->auditService->logSoftDelete(auth()->user(), $shareLink);
 
         return response()->noContent();
     }

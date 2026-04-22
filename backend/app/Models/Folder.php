@@ -38,13 +38,51 @@ class Folder extends Model
             if (!$model->slug) {
                 $model->slug = Str::slug($model->name);
             }
+
+            // Validate: root folders must have parent_id = NULL
+            if ($model->is_root && !is_null($model->parent_id)) {
+                throw new \InvalidArgumentException('Root folders cannot have a parent folder.');
+            }
+
+            // Validate: non-root folders must have parent_id
+            if (!$model->is_root && is_null($model->parent_id)) {
+                throw new \InvalidArgumentException('Non-root folders must have a parent folder.');
+            }
         });
 
         static::updating(function ($model) {
             if ($model->isDirty('name')) {
                 $model->slug = Str::slug($model->name);
             }
+
+            // Validate: cannot change root folder to have parent
+            if ($model->is_root && $model->isDirty('parent_id') && !is_null($model->parent_id)) {
+                throw new \InvalidArgumentException('Root folders cannot have a parent folder.');
+            }
+
+            // Validate: cannot create circular parent reference
+            if ($model->isDirty('parent_id') && !is_null($model->parent_id)) {
+                $parent = Folder::find($model->parent_id);
+                if ($parent && $this->isAncestorOf($parent)) {
+                    throw new \InvalidArgumentException('Cannot create circular parent reference.');
+                }
+            }
         });
+    }
+
+    /**
+     * Check if this folder is an ancestor of another folder
+     */
+    private function isAncestorOf(Folder $folder): bool
+    {
+        $current = $folder;
+        while ($current->parent_id) {
+            $current = $current->parent;
+            if ($current->id === $this->id) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -141,5 +179,78 @@ class Folder extends Model
     public function descendants()
     {
         return $this->children()->with('descendants');
+    }
+
+    /**
+     * Check if this folder has direct documents
+     */
+    public function hasDocuments(): bool
+    {
+        return $this->documents()->count() > 0;
+    }
+
+    /**
+     * Get count of direct documents
+     */
+    public function getDocumentCount(): int
+    {
+        return $this->documents()->count();
+    }
+
+    /**
+     * Scope: Get only leaf folders (folders that can receive documents)
+     * Leaf folders are those that can directly contain documents (non-root)
+     */
+    public function scopeOnlyLeafFolders($query)
+    {
+        return $query->where('is_root', false);
+    }
+
+    /**
+     * Scope: Get folders with their documents eager loaded
+     */
+    public function scopeWithDocuments($query)
+    {
+        return $query->with('documents');
+    }
+
+    /**
+     * Scope: Get folders with their permissions eager loaded
+     */
+    public function scopeWithPermissions($query)
+    {
+        return $query->with('permissions');
+    }
+
+    /**
+     * Get total size of all documents in this folder (direct + recursively)
+     */
+    public function getTotalSize(): int
+    {
+        $directSize = $this->documents()->sum('size') ?? 0;
+
+        $childrenSize = $this->children()->get()->sum(function ($child) {
+            return $child->getTotalSize();
+        });
+
+        return $directSize + $childrenSize;
+    }
+
+    /**
+     * Validate that folder structure is consistent
+     */
+    public function validateStructure(): bool
+    {
+        // Root folders should not have documents directly (design decision)
+        if ($this->is_root && $this->hasDocuments()) {
+            return false;
+        }
+
+        // All non-root folders must have a parent
+        if (!$this->is_root && is_null($this->parent_id)) {
+            return false;
+        }
+
+        return true;
     }
 }

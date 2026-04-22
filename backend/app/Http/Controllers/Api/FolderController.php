@@ -6,24 +6,52 @@ use App\Http\Controllers\Controller;
 use App\Models\Folder;
 use App\Models\Department;
 use App\Models\FolderResponsible;
+use App\Models\AuditLog;
+use App\Models\ShareLink;
 use App\Services\FolderService;
 use App\Services\FolderZipService;
+use App\Services\FileOperationService;
+use App\Services\AuditService;
 use App\Services\AuditLogger;
 use App\Services\AuthorizationService;
+use App\Services\PermissionValidator;
+use App\Services\StructureValidator;
+use App\Services\FolderValidator;
+use App\Exceptions\PermissionDeniedException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class FolderController extends Controller
 {
     protected $folderService;
     protected $folderZipService;
+    protected $fileOperationService;
+    protected $auditService;
     protected $authorizationService;
+    protected $permissionValidator;
+    protected $structureValidator;
+    protected $folderValidator;
 
-    public function __construct(FolderService $folderService, FolderZipService $folderZipService, AuthorizationService $authorizationService)
-    {
+    public function __construct(
+        FolderService $folderService,
+        FolderZipService $folderZipService,
+        FileOperationService $fileOperationService,
+        AuditService $auditService,
+        AuthorizationService $authorizationService,
+        PermissionValidator $permissionValidator,
+        StructureValidator $structureValidator,
+        FolderValidator $folderValidator
+    ) {
         $this->folderService = $folderService;
         $this->folderZipService = $folderZipService;
+        $this->fileOperationService = $fileOperationService;
+        $this->auditService = $auditService;
         $this->authorizationService = $authorizationService;
+        $this->permissionValidator = $permissionValidator;
+        $this->structureValidator = $structureValidator;
+        $this->folderValidator = $folderValidator;
     }
 
     public function index(Request $request)
@@ -59,21 +87,57 @@ class FolderController extends Controller
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:50',
             'description' => 'nullable|string|max:1000',
-            'parent_id' => 'nullable|exists:folders,id',
-            'department_id' => 'nullable|exists:departments,id',
+            'parent_id' => 'nullable|uuid|exists:folders,id',
+            'department_id' => 'nullable|uuid|exists:departments,id',
         ]);
+
+        // Validate structure before proceeding
+        try {
+            $this->structureValidator->validateFolderData([
+                'name' => $request->name,
+                'parent_id' => $request->parent_id,
+                'is_root' => is_null($request->parent_id),
+            ]);
+            
+            // Additional validation with FolderValidator for edge cases
+            $this->folderValidator->validateFolderData([
+                'name' => $request->name,
+                'parent_id' => $request->parent_id,
+                'is_root' => is_null($request->parent_id),
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
 
         $parent = $request->parent_id ? Folder::findOrFail($request->parent_id) : null;
         $department = $request->department_id ? Department::findOrFail($request->department_id) : null;
 
-        // Check upload permission se tiver parent
-        if ($parent && !$this->authorizationService->canUploadToFolder($user, $parent)) {
-            return response()->json(['error' => 'Forbidden'], 403);
+        // Guard: Check parent folder is not deleted
+        if ($parent && $parent->trashed()) {
+            return response()->json(['error' => 'Parent folder has been deleted'], 422);
+        }
+
+        // Guard: Check parent folder ancestor chain integrity
+        if ($parent) {
+            try {
+                $this->folderValidator->validateAncestorChainIntegrity($parent);
+            } catch (\InvalidArgumentException $e) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
         }
 
         // Se for raiz (sem parent) apenas admin pode criar
         if (!$parent && !$user->isAdmin()) {
             return response()->json(['error' => 'Only admin can create root folders'], 403);
+        }
+
+        // Check upload permission se tiver parent
+        if ($parent) {
+            try {
+                $this->permissionValidator->validateFolderAction($user, $parent, 'create');
+            } catch (PermissionDeniedException $e) {
+                return response()->json(['error' => $e->getMessage()], 403);
+            }
         }
 
         $folder = $this->folderService->createFolder(
@@ -83,14 +147,14 @@ class FolderController extends Controller
             $department
         );
 
-        // Create folder responsible for creator
+        // Create folder responsible for creator (owner)
         FolderResponsible::create([
             'folder_id' => $folder->id,
             'user_id' => $user->id,
             'is_owner' => true,
         ]);
 
-        // Create permissions for creator
+        // Create permissions for creator (all permissions by default)
         $folder->permissions()->create([
             'user_id' => $user->id,
             'can_view' => true,
@@ -99,6 +163,7 @@ class FolderController extends Controller
             'can_upload' => true,
             'can_share' => true,
             'can_download' => true,
+            'can_manage_permissions' => true,
         ]);
 
         AuditLogger::log($user, 'CREATE', $folder);
@@ -110,33 +175,80 @@ class FolderController extends Controller
     {
         $user = auth()->user();
 
-        if (!$this->authorizationService->canViewFolder($user, $folder)) {
-            return response()->json(['error' => 'Forbidden'], 403);
-        }
-
         try {
-            // Criar arquivo ZIP
-            $zipPath = $this->folderZipService->createZip($folder);
-            $zipFileName = $this->folderZipService->getZipDownloadName($folder);
-
-            // Verificar se arquivo foi criado
-            if (!file_exists($zipPath)) {
-                return response()->json(['error' => 'Arquivo ZIP não foi criado'], 500);
-            }
-
-            AuditLogger::log($user, 'DOWNLOAD', $folder, ['type' => 'zip']);
-
-            // Retornar o arquivo para download
-            $response = response()->download($zipPath, $zipFileName, [
-                'Content-Type' => 'application/zip',
-                'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"',
-            ]);
-
-            // Registrar para limpeza posterior (não deletar imediatamente)
-            return $response;
+            return $this->fileOperationService->downloadFolder($user, $folder);
+        } catch (PermissionDeniedException $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Não foi possível criar o arquivo ZIP: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Share folder via ShareLink
+     */
+    public function share(Request $request, Folder $folder)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'expires_at' => 'nullable|date|after:now',
+            'password' => 'nullable|string|min:6|max:255',
+        ]);
+
+        // FIRST STEP: Validate permissions before creating share link
+        try {
+            $this->permissionValidator->validateFolderAction($user, $folder, 'share');
+        } catch (PermissionDeniedException $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
+        }
+
+        // Create share link
+        $shareLink = ShareLink::create([
+            'token' => Str::random(60),
+            'shareable_type' => 'Folder',
+            'shareable_id' => $folder->id,
+            'expires_at' => $request->expires_at,
+            'password' => $request->password ? hash('sha256', $request->password) : null,
+            'created_by' => $user->id,
+        ]);
+
+        // Use AuditService for logging
+        $this->auditService->logShare($user, $folder, [
+            'share_link_id' => $shareLink->id,
+            'token' => $shareLink->token,
+        ]);
+
+        return response()->json([
+            'token' => $shareLink->token,
+            'url' => url("/api/compartilhamentos/{$shareLink->token}"),
+            'expires_at' => $shareLink->expires_at,
+        ], 201);
+    }
+
+    /**
+     * Get audit logs for folder
+     */
+    public function logs(Request $request, Folder $folder)
+    {
+        $user = $request->user();
+
+        // Validate: user must have can_view
+        try {
+            $this->permissionValidator->validateFolderAction($user, $folder, 'view');
+        } catch (PermissionDeniedException $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
+        }
+
+        $perPage = $request->input('per_page', 15);
+        
+        $logs = AuditLog::where('resource_type', 'Folder')
+            ->where('resource_id', $folder->id)
+            ->with('user')
+            ->latest('created_at')
+            ->paginate($perPage);
+
+        return response()->json($logs);
     }
 
     public function show(Folder $folder)
@@ -156,13 +268,16 @@ class FolderController extends Controller
     {
         $user = $request->user();
 
-        if (!$this->authorizationService->canManageFolderPermissions($user, $folder)) {
-            return response()->json(['error' => 'Forbidden'], 403);
-        }
-
         $request->validate([
             'name' => 'sometimes|string|max:255',
         ]);
+
+        // Validate: user must have can_view + can_update_metadata
+        try {
+            $this->permissionValidator->validateFolderAction($user, $folder, 'update');
+        } catch (PermissionDeniedException $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
+        }
 
         $folder->update($request->only('name'));
         AuditLogger::log($user, 'UPDATE_METADATA', $folder);
@@ -174,27 +289,45 @@ class FolderController extends Controller
     {
         $user = auth()->user();
 
-        if (!$this->authorizationService->canDeleteFolder($user, $folder)) {
-            return response()->json(['error' => 'Forbidden'], 403);
+        try {
+            $this->fileOperationService->deleteFolderTree($user, $folder);
+            return response()->noContent();
+        } catch (PermissionDeniedException $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
 
-        $folder->delete();
-        AuditLogger::log($user, 'SOFT_DELETE', $folder);
-        return response()->noContent();
+    /**
+     * Permanently delete folder (only admin, only if in trash)
+     */
+    public function forceDelete($id)
+    {
+        $user = auth()->user();
+
+        try {
+            $folder = Folder::withTrashed()->findOrFail($id);
+            $this->fileOperationService->permanentlyDeleteFolder($user, $folder);
+            return response()->noContent();
+        } catch (PermissionDeniedException $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
     }
 
     public function restore($id)
     {
         $user = auth()->user();
 
-        if (!$user->isAdmin()) {
-            return response()->json(['error' => 'Forbidden'], 403);
+        try {
+            $folder = Folder::withTrashed()->findOrFail($id);
+            $this->fileOperationService->restoreFolder($user, $folder);
+            return response()->json($folder);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
         }
-
-        $folder = Folder::withTrashed()->findOrFail($id);
-        $folder->restore();
-        AuditLogger::log($user, 'RESTORE', $folder);
-        return response()->json($folder);
     }
 
     public function stats(Folder $folder)

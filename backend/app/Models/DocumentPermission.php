@@ -20,6 +20,7 @@ class DocumentPermission extends Model
         'can_delete',
         'can_download',
         'can_share',
+        'can_manage_permissions',
     ];
 
     protected $casts = [
@@ -28,6 +29,7 @@ class DocumentPermission extends Model
         'can_delete' => 'boolean',
         'can_download' => 'boolean',
         'can_share' => 'boolean',
+        'can_manage_permissions' => 'boolean',
     ];
 
     protected $keyType = 'string';
@@ -84,6 +86,29 @@ class DocumentPermission extends Model
             'can_delete' => $this->can_delete,
             'can_download' => $this->can_download,
             'can_share' => $this->can_share,
+            'can_manage_permissions' => $this->can_manage_permissions,
         ]);
+    }
+
+    /**
+     * Check if view permission is required before other operations
+     */
+    public function requiresViewPermission(): bool
+    {
+        return !$this->can_view && (
+            $this->can_update_metadata ||
+            $this->can_delete ||
+            $this->can_download ||
+            $this->can_share ||
+            $this->can_manage_permissions
+        );
+    }
+
+    /**
+     * Check if this permission grants management rights
+     */
+    public function canManagePermissions(): bool
+    {
+        return $this->can_manage_permissions === true;
     }
 }

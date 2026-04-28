@@ -115,9 +115,7 @@ function UserTable() {
     role: string,
     phone?: string,
     profession?: string,
-    e: React.FormEvent<HTMLFormElement>,
   ) => {
-    e.preventDefault();
     //fetch or axios call to store user
     console.log("Criar usuário com dados:", {
       name,
@@ -150,14 +148,33 @@ function UserTable() {
     } catch (error) {}
   };
 
-  const openEditUserModal = (userId: string) => {
+  const handleView = async (userId?: string) => {
+    if (!userId) {
+      return;
+    }
+
+    try {
+      const response = await showUser(userId);
+      setSelectedUser(response.data.user);
+    } catch (error) {
+      console.error("Erro ao carregar utilizador:", error);
+    }
+  };
+
+  const openEditUserModal = (userId?: string) => {
+    if (!userId) {
+      return;
+    }
     console.log("Editar usuário:", userId);
     closeDropdown();
     setActiveModal("edit");
   };
   const updateUser = (userId: string) => {};
 
-  const openActiveUserModal = (userId: string) => {
+  const openActiveUserModal = (userId?: string) => {
+    if (!userId) {
+      return;
+    }
     setSelectedUser(users.find((user) => user.id === userId) || null);
     setActiveModal("active");
     closeDropdown();
@@ -177,7 +194,10 @@ function UserTable() {
     setActiveModal(null);
   };
 
-  const openDeactiveUserModal = (userId: string) => {
+  const openDeactiveUserModal = (userId?: string) => {
+    if (!userId) {
+      return;
+    }
     setSelectedUser(users.find((user) => user.id === userId) || null);
     closeDropdown();
     setActiveModal("deactive");
@@ -198,21 +218,30 @@ function UserTable() {
     setActiveModal(null);
   };
 
-  const openReseteUserModal = (userId: string) => {
+  const openReseteUserModal = (userId?: string) => {
+    if (!userId) {
+      return;
+    }
     setSelectedUser(users.find((user) => user.id === userId) || null);
     setActiveModal("resetPassword");
     closeDropdown();
   };
   const reseteUserPassword = (userId: string) => {};
 
-  const openDeleteUserModal = (userId: string) => {
+  const openDeleteUserModal = (userId?: string) => {
+    if (!userId) {
+      return;
+    }
     console.log("Remover usuário:", userId);
     closeDropdown();
     setActiveModal("delete");
   };
   const deleteUserModal = (userId: string) => {};
 
-  const toggleDropdown = (userId: string) => {
+  const toggleDropdown = (userId?: string) => {
+    if (!userId) {
+      return;
+    }
     setOpenMenuId(openMenuId === userId ? null : userId);
   };
   const closeDropdown = () => {
@@ -479,7 +508,10 @@ function UserTable() {
       <ResetUserPassword
         isOpen={activeModal === "resetPassword"}
         onClose={() => setActiveModal(null)}
-        onSubmit={openReseteUserModal}
+        onSubmit={(id) => {
+          console.log("Reset password para utilizador:", id);
+          setActiveModal(null);
+        }}
         userData={[selectedUser?.id || "", selectedUser?.name || ""]}
       />
     </div>

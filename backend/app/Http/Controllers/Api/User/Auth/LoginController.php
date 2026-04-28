@@ -64,7 +64,7 @@ class LoginController extends Controller
             60 * 24,               // minutes (24 horas)
             '/',                   // path
             null,                  // domain
-            true,                  // secure (apenas HTTPS)
+            config('app.env') === 'production',  // secure: apenas HTTPS em produção
             true,                  // httpOnly (protege contra XSS)
             false,                 // raw
             'lax'                  // sameSite (protege contra CSRF)

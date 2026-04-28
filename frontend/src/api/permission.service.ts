@@ -7,6 +7,7 @@ export interface PermissionAssignPayload {
   can_download?: boolean;
   can_share?: boolean;
   can_upload?: boolean; // apenas para pastas
+  can_manage_permissions?: boolean;
   user_id?: string;
   group_id?: string;
 }
@@ -21,8 +22,11 @@ export interface Permission {
   can_download: boolean;
   can_share: boolean;
   can_upload?: boolean;
+  can_manage_permissions: boolean;
   created_at?: string;
   updated_at?: string;
+  user?: { id: string; name: string; email?: string };
+  group?: { id: string; name: string };
 }
 
 export interface ListPermissionsResponse {
@@ -140,7 +144,9 @@ export async function assignPermission(
     const listFn = itemType === "folder" ? listFolderPermissions : listDocumentPermissions;
     console.log("[PermissionService] Fetching existing permissions for:", itemId);
     const listResponse = await listFn(itemId);
-    const existingPermissions = listResponse.data.data || listResponse.data.permissoes || [];
+    const existingPermissions = Array.isArray(listResponse.data) 
+      ? listResponse.data 
+      : (listResponse.data.data || listResponse.data.permissoes || []);
 
     // 2. Encontrar se existe permissão para este target
     const existingPermission = existingPermissions.find((p: Permission) => {

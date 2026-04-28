@@ -60,6 +60,7 @@ class DocumentPermissionController extends Controller
             'can_delete' => 'required|boolean',
             'can_download' => 'required|boolean',
             'can_share' => 'required|boolean',
+            'can_manage_permissions' => 'nullable|boolean',
         ]);
 
         // XOR constraint: either user_id OR group_id, but not both
@@ -84,7 +85,8 @@ class DocumentPermissionController extends Controller
                 'can_update_metadata',
                 'can_delete',
                 'can_download',
-                'can_share'
+                'can_share',
+                'can_manage_permissions'
             ]));
             AuditLogger::log($user, 'UPDATE_METADATA', $existing);
             return response()->json($existing);
@@ -99,6 +101,7 @@ class DocumentPermissionController extends Controller
             'can_delete' => $request->can_delete,
             'can_download' => $request->can_download,
             'can_share' => $request->can_share,
+            'can_manage_permissions' => $request->can_manage_permissions ?? false,
         ]);
 
         AuditLogger::log($user, 'CREATE', $permission, [
@@ -132,6 +135,7 @@ class DocumentPermissionController extends Controller
             'can_delete' => 'sometimes|boolean',
             'can_download' => 'sometimes|boolean',
             'can_share' => 'sometimes|boolean',
+            'can_manage_permissions' => 'sometimes|boolean',
         ]);
 
         $permission->update($request->only([
@@ -139,7 +143,8 @@ class DocumentPermissionController extends Controller
             'can_update_metadata',
             'can_delete',
             'can_download',
-            'can_share'
+            'can_share',
+            'can_manage_permissions'
         ]));
 
         AuditLogger::log($user, 'UPDATE_METADATA', $permission);

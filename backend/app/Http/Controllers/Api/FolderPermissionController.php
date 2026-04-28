@@ -61,6 +61,7 @@ class FolderPermissionController extends Controller
             'can_upload' => 'required|boolean',
             'can_share' => 'required|boolean',
             'can_download' => 'required|boolean',
+            'can_manage_permissions' => 'nullable|boolean',
         ]);
 
         // XOR constraint: either user_id OR group_id, but not both
@@ -86,7 +87,8 @@ class FolderPermissionController extends Controller
                 'can_delete',
                 'can_upload',
                 'can_share',
-                'can_download'
+                'can_download',
+                'can_manage_permissions'
             ]));
             AuditLogger::log($user, 'UPDATE_METADATA', $existing);
             return response()->json($existing);
@@ -102,6 +104,7 @@ class FolderPermissionController extends Controller
             'can_upload' => $request->can_upload,
             'can_share' => $request->can_share,
             'can_download' => $request->can_download,
+            'can_manage_permissions' => $request->can_manage_permissions ?? false,
         ]);
 
         AuditLogger::log($user, 'CREATE', $permission, [
@@ -136,6 +139,7 @@ class FolderPermissionController extends Controller
             'can_upload' => 'sometimes|boolean',
             'can_share' => 'sometimes|boolean',
             'can_download' => 'sometimes|boolean',
+            'can_manage_permissions' => 'sometimes|boolean',
         ]);
 
         $permission->update($request->only([
@@ -144,7 +148,8 @@ class FolderPermissionController extends Controller
             'can_delete',
             'can_upload',
             'can_share',
-            'can_download'
+            'can_download',
+            'can_manage_permissions'
         ]));
 
         AuditLogger::log($user, 'UPDATE_METADATA', $permission);

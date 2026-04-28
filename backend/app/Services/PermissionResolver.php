@@ -25,6 +25,11 @@ class PermissionResolver
             return $this->getAllPermissions();
         }
 
+        // Folder owner has all permissions
+        if ($this->isFolderResponsible($user, $folder)) {
+            return $this->getAllPermissions();
+        }
+
         // Check if access is blocked by ancestors
         if ($this->isBlockedByAncestors($user, $folder)) {
             return $this->getNoPermissions();
@@ -100,6 +105,11 @@ class PermissionResolver
      */
     private function resolveDirectFolderPermissions(User $user, Folder $folder): array
     {
+        // Folder owner has all permissions
+        if ($this->isFolderResponsible($user, $folder)) {
+            return $this->getAllPermissions();
+        }
+
         // Check user-specific permission (highest priority)
         $userPerm = $folder->permissions()
             ->where('user_id', $user->id)
@@ -125,6 +135,22 @@ class PermissionResolver
         }
 
         return $this->getNoPermissions();
+    }
+
+    /**
+     * Check if user is a responsible (owner) for the folder
+     * 
+     * @param User $user
+     * @param Folder $folder
+     * @return bool
+     */
+    private function isFolderResponsible(User $user, Folder $folder): bool
+    {
+        return \DB::table('folder_responsibles')
+            ->where('folder_id', $folder->id)
+            ->where('user_id', $user->id)
+            ->where('is_owner', true)
+            ->exists();
     }
 
     /**

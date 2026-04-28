@@ -1,9 +1,10 @@
 import {
+  canAccessFolder,
   createFolder,
   Document,
   Folder,
-  getDocuments,
-  getFolder,
+  FolderDetails,
+  getFolderContents,
   uploadDocument,
   downloadFolder,
   downloadDocument,
@@ -29,6 +30,7 @@ import { formatDate } from "@fullcalendar/core/index.js";
 import {
   AdjustmentsHorizontalIcon,
   DocumentPlusIcon,
+  EyeSlashIcon,
   EyeIcon,
   FolderPlusIcon,
   KeyIcon,
@@ -38,13 +40,15 @@ import {
 } from "@heroicons/react/24/outline";
 import { DocumentTextIcon, FolderOpenIcon } from "@heroicons/react/24/solid";
 import { AlertCircleIcon, CheckCircleIcon, DownloadIcon, FolderIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 
 interface FolderTables2Props {
   folderId?: string;
 }
 
 function FolderTables2({ folderId }: FolderTables2Props) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeFolderModal, setActiveFolderModal] = useState<"create" | "edit" | null>(null);
   const [activeFileModal, setActiveFileModal] = useState<"create" | "edit" | null>(null);
   const [activeItemModal, setActiveItemModal] = useState<"share" | "permission" | "remove" | null>(null);
@@ -53,12 +57,23 @@ function FolderTables2({ folderId }: FolderTables2Props) {
 
   const [documents, setDocuments] = useState<Document[]>([]);
   const [folderData, setFolderData] = useState<Folder | Document | null>(null);
+  const [currentFolder, setCurrentFolder] = useState<FolderDetails | null>(null);
+  const [breadcrumbs, setBreadcrumbs] = useState<Array<Pick<Folder, "id" | "name">>>([]);
 
   const [folders, setFolders] = useState<Folder[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const currentFolderId = folderId ?? searchParams.get("folder") ?? undefined;
+  const visibleFolders = useMemo(
+    () => folders.filter((folder) => Boolean(folder?.id && folder?.name)),
+    [folders],
+  );
+  const visibleDocuments = useMemo(
+    () => documents.filter((document) => Boolean(document?.id && document?.name)),
+    [documents],
+  );
 
   const handleShareItem = (data: Folder | Document, fileType: string) => {
     setItemType(fileType);
@@ -229,15 +244,27 @@ function FolderTables2({ folderId }: FolderTables2Props) {
       setLoading(true);
       setError(null);
 
-      const response = await getFolder(folderId ?? undefined);
-      const responseDocuments = await getDocuments(folderId ?? undefined);
+      const data = await getFolderContents(currentFolderId);
+      const accessibleFolders = await Promise.all(
+        data.folders.map(async (folder) => ({
+          folder,
+          canView: await canAccessFolder(folder.id),
+        })),
+      );
 
-      const folderData = response.data;
-      setFolders(extractFolders(folderData));
-      setDocuments(extractDocuments(responseDocuments));
+      setFolders(
+        accessibleFolders
+          .filter((entry) => entry.canView)
+          .map((entry) => entry.folder),
+      );
+      setDocuments(data.documents);
+      setCurrentFolder(data.currentFolder);
 
-      console.log("✅ Pastas carregadas com sucesso:", extractFolders(folderData));
-      console.log("✅ Documentos carregados com sucesso:", extractDocuments(responseDocuments));
+      if (!currentFolderId || !data.currentFolder) {
+        setBreadcrumbs([]);
+      } else {
+        setBreadcrumbs([{ id: data.currentFolder.id, name: data.currentFolder.name }]);
+      }
     } catch (err) {
       const errorMsg =
         err instanceof Error
@@ -251,7 +278,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
 
   useEffect(() => {
     refreshFolders();
-  }, [folderId]);
+  }, [currentFolderId]);
 
   const handleCreateFile = () => {
     setActiveFileModal("create");
@@ -302,15 +329,15 @@ function FolderTables2({ folderId }: FolderTables2Props) {
       setError(null);
       // Upload com ou sem folderId (raiz se undefined)
       await Promise.all(
-        files.map((file) => uploadDocument(folderId, file)),
+        files.map((file) => uploadDocument(currentFolderId, file)),
       );
 
       // ✅ Feedback visual
-      const isRootUpload = !folderId;
+      const isRootUpload = !currentFolderId;
       const fileNames = files.map(f => f.name).join(", ");
       const successMsg = isRootUpload
         ? `${files.length} ficheiro(s) carregado(s) para raiz! (folder_id=NULL): ${fileNames}`
-        : `${files.length} ficheiro(s) carregado(s) para pasta! (folder_id=${folderId}): ${fileNames}`;
+        : `${files.length} ficheiro(s) carregado(s) para pasta! (folder_id=${currentFolderId}): ${fileNames}`;
       console.log(`✅ ${successMsg}`);
       setSuccess(successMsg);
 
@@ -328,11 +355,35 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     }
   };
 
+  const navigateToFolder = (targetFolderId?: string | null) => {
+    if (folderId) {
+      return;
+    }
+
+    const nextParams = new URLSearchParams(searchParams);
+
+    if (targetFolderId) {
+      nextParams.set("folder", targetFolderId);
+    } else {
+      nextParams.delete("folder");
+    }
+
+    setSearchParams(nextParams);
+  };
+
   const handleOpenItem = (itemId: string) => {
     const folder = folders.find(f => f.id === itemId);
     if (folder) {
-      console.log(`Abrir pasta: ${folder.name}`);
+      navigateToFolder(folder.id);
     }
+  };
+
+  const handleBack = () => {
+    if (folderId) {
+      return;
+    }
+
+    navigateToFolder(currentFolder?.parent_id);
   };
 
   if (loading) {
@@ -366,38 +417,47 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     );
   }
 
-  if (folders.length === 0) {
-    // console.log(
-    //   "⚠️ Nenhuma Ficheiro encontrado. Ficheiros=",
-    //   folders,
-    //   "loading=",
-    //   loading,
-    //   "error=",
-    //   error,
-    // );
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <FolderIcon className="w-12 h-12 text-gray-400 mx-auto" />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
-            Nenhum ficheiro encontrado
-          </p>
-        </div>
-      </div>
-    );
-  }
+  const isEmpty = visibleFolders.length === 0 && visibleDocuments.length === 0;
 
   return (
     <div className=" max-h-[calc(100vh-110px)] overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg flex items-center gap-2 text-gray-800 dark:text-white/90">
-            <FolderIcon className="size-5 -mt-0.5" /> ABS / Folder /{" "}
-            <span className=" font-bold">Sub dir</span>
-          </h3>
+          <div className="flex flex-wrap items-center gap-2 text-lg text-gray-800 dark:text-white/90">
+            <FolderIcon className="size-5 -mt-0.5" />
+            <button
+              onClick={() => navigateToFolder(null)}
+              className="font-medium hover:text-brand-600 dark:hover:text-brand-400"
+            >
+              Raiz
+            </button>
+            {breadcrumbs.map((crumb) => (
+              <div key={crumb.id} className="flex items-center gap-2">
+                <span className="text-gray-400">/</span>
+                <button
+                  onClick={() => navigateToFolder(crumb.id)}
+                  className={`${
+                    crumb.id === currentFolderId
+                      ? "font-bold text-gray-900 dark:text-white"
+                      : "font-medium hover:text-brand-600 dark:hover:text-brand-400"
+                  }`}
+                >
+                  {crumb.name}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
+          {currentFolderId && !folderId && (
+            <button
+              onClick={handleBack}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+            >
+              Voltar
+            </button>
+          )}
           <button className=" w-40 h-10 pl-2.5 flex items-center justify-start gap-2 rounded-full border border-gray-300 bg-white text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
             <MagnifyingGlassIcon className="size-4.5" />
             Pesquisar...
@@ -496,7 +556,10 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                     >
                       <PencilIcon className="size-4.5" />
                     </button>
-                    <button className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
+                    <button
+                      onClick={() => handleOpenItem(folder.id)}
+                      className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
+                    >
                       <EyeIcon className="size-5" />
                     </button>
                     <button
@@ -651,13 +714,13 @@ function FolderTables2({ folderId }: FolderTables2Props) {
         isOpen={activeFileModal === "create"}
         onClose={() => setActiveFileModal(null)}
         onUpload={handleUploadFiles}
-        folderId={folderId}
+        folderId={currentFolderId}
       />
 
       <CreateFolderModal
         isOpen={activeFolderModal === "create"}
         onClose={() => setActiveFolderModal(null)}
-        onSubmit={(name, slug, description) => handleFolderCreate(name, slug, description, folderId)}
+        onSubmit={(name, slug, description) => handleFolderCreate(name, slug, description, currentFolderId)}
       />
 
       <EditFolderModal
@@ -699,7 +762,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
           setActiveItemModal(null);
           refreshFolders();
         }}
-        folderId={folderId || ""}
+        folderId={currentFolderId || ""}
       />
 
     </div>

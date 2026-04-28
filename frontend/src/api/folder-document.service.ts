@@ -34,14 +34,116 @@ export interface Document {
   updated_at?: string;
 }
 
+export interface FolderDetails extends Folder {
+  children?: Folder[];
+  documents?: Document[];
+  parent?: Folder | null;
+}
+
+export interface FolderContents {
+  folders: Folder[];
+  documents: Document[];
+  currentFolder: FolderDetails | null;
+}
+
 export type GetFolderResponse =
   | Folder[]
   | Folder
+  | FolderDetails
   | {
       status?: string;
       folders?: Folder[];
-      data?: Folder[] | Folder;
+      data?: Folder[] | Folder | FolderDetails;
     };
+
+function extractFolderArray(payload: unknown): Folder[] {
+  if (Array.isArray(payload)) {
+    return payload as Folder[];
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const obj = payload as {
+    data?: unknown;
+    folders?: unknown;
+    children?: unknown;
+  };
+
+  if (Array.isArray(obj.folders)) {
+    return obj.folders as Folder[];
+  }
+
+  if (Array.isArray(obj.children)) {
+    return obj.children as Folder[];
+  }
+
+  if (Array.isArray(obj.data)) {
+    return obj.data as Folder[];
+  }
+
+  if (obj.data && typeof obj.data === "object") {
+    return extractFolderArray(obj.data);
+  }
+
+  return [];
+}
+
+function extractDocumentArray(payload: unknown): Document[] {
+  if (Array.isArray(payload)) {
+    return payload as Document[];
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const obj = payload as {
+    data?: unknown;
+    documents?: unknown;
+  };
+
+  if (Array.isArray(obj.documents)) {
+    return obj.documents as Document[];
+  }
+
+  if (Array.isArray(obj.data)) {
+    return obj.data as Document[];
+  }
+
+  if (obj.data && typeof obj.data === "object") {
+    return extractDocumentArray(obj.data);
+  }
+
+  return [];
+}
+
+function extractFolderDetails(payload: unknown): FolderDetails | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return null;
+  }
+
+  const obj = payload as {
+    data?: unknown;
+    children?: unknown;
+    documents?: unknown;
+  };
+
+  if (
+    "id" in obj &&
+    "name" in obj &&
+    "is_root" in obj
+  ) {
+    return obj as FolderDetails;
+  }
+
+  if (obj.data && typeof obj.data === "object" && !Array.isArray(obj.data)) {
+    return extractFolderDetails(obj.data);
+  }
+
+  return null;
+}
 
 /**
  * Buscar uma pasta pelo ID
@@ -56,9 +158,46 @@ export function getFolder(id?: string | null) {
 /**
  * Buscar uma pasta pelo ID
  */
-export const getFolderById = async (folderId: string): Promise<Folder> => {
-  const response = await api.get(`/pastas/${folderId}`);
-  return response.data.data || response.data;
+export const getFolderById = async (folderId: string): Promise<FolderDetails> => {
+  const response = await getFolder(folderId);
+  const folder = extractFolderDetails(response.data);
+
+  if (!folder) {
+    throw new Error("Resposta invÃ¡lida ao carregar pasta");
+  }
+
+  return folder;
+};
+
+export const getFolderContents = async (
+  folderId?: string | null,
+): Promise<FolderContents> => {
+  if (!folderId) {
+    const response = await getFolder();
+
+    return {
+      folders: extractFolderArray(response.data),
+      documents: [],
+      currentFolder: null,
+    };
+  }
+
+  const folder = await getFolderById(folderId);
+
+  return {
+    folders: Array.isArray(folder.children) ? folder.children : [],
+    documents: Array.isArray(folder.documents) ? folder.documents : [],
+    currentFolder: folder,
+  };
+};
+
+export const canAccessFolder = async (folderId: string): Promise<boolean> => {
+  try {
+    await getFolder(folderId);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 /**
@@ -67,9 +206,9 @@ export const getFolderById = async (folderId: string): Promise<Folder> => {
 export const getDocuments = async (
   folderId?: string,
 ): Promise<Document[]> => {
-  const url = folderId ? `/pastas/${folderId}/documentos` : `/documentos`;
+  const url = folderId ? `/documentos?folder_id=${folderId}` : `/documentos`;
   const response = await api.get(url);
-  return response.data.data || response.data;
+  return extractDocumentArray(response.data);
 };
 
 /**

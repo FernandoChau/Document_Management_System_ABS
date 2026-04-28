@@ -193,13 +193,18 @@ class AuthorizationService
         $folderIds = \DB::table('folder_permissions')
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
-                    ->orWhereIn('group_id', $user->groups()->pluck('id'));
+                    ->orWhereIn('group_id', $user->groups()->pluck('groups.id')); // fix: groups.id
             })
             ->where('can_view', true)
             ->distinct()
             ->pluck('folder_id');
 
-        return Folder::whereIn('id', $folderIds)->get();
+        // Add folders where user is responsible
+        $responsibleFolderIds = \DB::table('folder_responsibles')
+            ->where('user_id', $user->id)
+            ->pluck('folder_id');
+
+        return Folder::whereIn('id', $folderIds->merge($responsibleFolderIds))->get();
     }
 
     /**
@@ -215,19 +220,26 @@ class AuthorizationService
         $folderIds = \DB::table('folder_permissions')
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
-                    ->orWhereIn('group_id', $user->groups()->pluck('id'));
+                    ->orWhereIn('group_id', $user->groups()->pluck('groups.id')); // fix: groups.id
             })
             ->where('can_view', true)
             ->distinct()
             ->pluck('folder_id');
 
-        $documents = Document::whereIn('folder_id', $folderIds)->get();
+        // Add folders where user is responsible
+        $responsibleFolderIds = \DB::table('folder_responsibles')
+            ->where('user_id', $user->id)
+            ->pluck('folder_id');
+        
+        $allFolderIds = $folderIds->merge($responsibleFolderIds)->unique();
+
+        $documents = Document::whereIn('folder_id', $allFolderIds)->get();
 
         // Add document-specific permissions
         $docIds = \DB::table('document_permissions')
             ->where(function ($query) use ($user) {
                 $query->where('user_id', $user->id)
-                    ->orWhereIn('group_id', $user->groups()->pluck('id'));
+                    ->orWhereIn('group_id', $user->groups()->pluck('groups.id')); // fix: groups.id
             })
             ->where('can_view', true)
             ->distinct()

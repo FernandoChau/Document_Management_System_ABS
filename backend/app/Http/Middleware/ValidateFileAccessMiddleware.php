@@ -62,17 +62,19 @@ class ValidateFileAccessMiddleware
         }
 
         // Get the folder or document from route parameters
-        $folderId = $request->route('folder') ?? $request->route('folder_id');
-        $documentId = $request->route('document') ?? $request->route('document_id');
+        $folderParam = $request->route('folder') ?? $request->route('folder_id');
+        $documentParam = $request->route('document') ?? $request->route('document_id');
+
+        // Handle folder - model binding may have already resolved it
+        $folder = null;
+        if ($folderParam instanceof Folder) {
+            $folder = $folderParam;
+        } elseif ($folderParam) {
+            $folder = Folder::find($folderParam);
+        }
 
         // Validate folder access
-        if ($folderId) {
-            $folder = Folder::find($folderId);
-            
-            if (!$folder) {
-                return response()->json(['error' => 'Folder not found'], 404);
-            }
-
+        if ($folder) {
             try {
                 $permissions = $this->permissionValidator->validateFolderAction($user, $folder, 'view');
                 $request->attributes->set('resource_permissions', $permissions['permissions']);
@@ -83,14 +85,16 @@ class ValidateFileAccessMiddleware
             }
         }
 
-        // Validate document access
-        if ($documentId) {
-            $document = Document::find($documentId);
-            
-            if (!$document) {
-                return response()->json(['error' => 'Document not found'], 404);
-            }
+        // Handle document - model binding may have already resolved it
+        $document = null;
+        if ($documentParam instanceof Document) {
+            $document = $documentParam;
+        } elseif ($documentParam) {
+            $document = Document::find($documentParam);
+        }
 
+        // Validate document access
+        if ($document) {
             try {
                 $permissions = $this->permissionValidator->validateDocumentAction($user, $document, 'view');
                 $request->attributes->set('resource_permissions', $permissions['permissions']);

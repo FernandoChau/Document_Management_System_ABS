@@ -144,6 +144,7 @@ export default function SignInForm() {
                 </div>
                 <div>
                   <Button
+                    type="submit"
                     disabled={loading}
                     className={loading ? "w-full animate-pulse" : "w-full"}
                     size="sm"

@@ -1,4 +1,3 @@
-import FolderTables from '../../components/tables/FolderTables/FolderTables'
 import PageMeta from '../../components/common/PageMeta'
 import FolderTables2 from '@/components/tables/FolderTables/FolderTables2'
 

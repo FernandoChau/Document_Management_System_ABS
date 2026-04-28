@@ -24,7 +24,7 @@ class LogoutController extends Controller
             -1,                    // minutes (expira imediatamente)
             '/',                   // path
             null,                  // domain
-            true,                  // secure (apenas HTTPS)
+            config('app.env') === 'production',  // secure: apenas HTTPS em produção
             true,                  // httpOnly
             false,                 // raw
             'lax'                  // sameSite

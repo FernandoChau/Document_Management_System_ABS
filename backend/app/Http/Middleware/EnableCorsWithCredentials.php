@@ -25,6 +25,8 @@ class EnableCorsWithCredentials
         // Domínios permitidos
         $allowedOrigins = [
             'http://localhost:5173',  // Desenvolvimento Vite
+            'http://localhost:5174',  // Desenvolvimento Vite alt
+            'http://localhost:5175',  // Desenvolvimento Vite alt
             'http://localhost:3000',  // Alternativa
             'http://localhost:8080',  // Alternativa
             'https://localhost:5173', // HTTPS local

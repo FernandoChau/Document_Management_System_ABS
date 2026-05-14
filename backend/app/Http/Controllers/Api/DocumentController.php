@@ -63,9 +63,11 @@ class DocumentController extends Controller
             'files.*' => 'file|max:51200', // 50MB max per file
         ]);
 
-        // Validate: folder must not be root (documents cannot be uploaded to root)
+        // Validate: folder is not root (documents cannot be uploaded to root)
         if ($folder->is_root) {
-            return response()->json(['error' => 'Desculpa o documento nao pode ser inserido nesta área.'], 422);
+            return response()->json([
+                'error' => 'Não é permitido fazer upload de ficheiros em pastas raiz. Por favor, selecione uma subpasta.'
+            ], 422);
         }
 
         // Validate: folder not deleted
@@ -101,7 +103,6 @@ class DocumentController extends Controller
                 // Additional validation: MIME type and file size
                 $this->documentValidator->validateMimeType($file->getMimeType());
                 $this->documentValidator->validateFileSize($file->getSize());
-                $this->documentValidator->validateNotInRoot($folder);
 
                 $doc = $this->documentService->uploadFile($folder, $file, $user);
                 $this->auditService->logUpload($user, $doc);
@@ -116,18 +117,6 @@ class DocumentController extends Controller
         return response()->json(['message' => 'Submissão bem sucedida.', 'documents' => $documents], 201);
     }
 
-                $doc = $this->documentService->uploadFile($folder, $file, $user);
-                $this->auditService->logUpload($user, $doc);
-                $documents[] = $doc;
-            } catch (\InvalidArgumentException $e) {
-                return response()->json(['error' => 'Erro ao validar: ' . $e->getMessage()], 422);
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Erro ao Submeter: ' . $e->getMessage()], 500);
-            }
-        }
-
-        return response()->json(['message' => 'Upload successful', 'documents' => $documents], 201);
-    }
 
     /**
      * Upload de ficheiros para raiz - BLOQUEADO
@@ -301,6 +290,11 @@ class DocumentController extends Controller
         $documents = $query->withMetadata()
             ->withRelations()
             ->paginate($perPage);
+
+        // Attach permissions to each document
+        foreach ($documents as $doc) {
+            $doc->permissions = $this->authorizationService->resolveDocumentPermissions($user, $doc);
+        }
 
         return response()->json($documents);
     }

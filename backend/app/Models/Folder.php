@@ -17,15 +17,12 @@ class Folder extends Model
         'parent_id',
         'department_id',
         'reference_code',
-        'is_root',
     ];
 
     protected $keyType = 'string';
     public $incrementing = false;
 
-    protected $casts = [
-        'is_root' => 'boolean',
-    ];
+    protected $casts = [];
 
     /**
      * Boot the model
@@ -39,15 +36,7 @@ class Folder extends Model
                 $model->slug = Str::slug($model->name);
             }
 
-            // Validate: root folders must have parent_id = NULL
-            if ($model->is_root && !is_null($model->parent_id)) {
-                throw new \InvalidArgumentException('Root folders cannot have a parent folder.');
-            }
-
-            // Validate: non-root folders must have parent_id
-            if (!$model->is_root && is_null($model->parent_id)) {
-                throw new \InvalidArgumentException('Non-root folders must have a parent folder.');
-            }
+            // No extra validation needed for is_root anymore
         });
 
         static::updating(function ($model) {
@@ -55,10 +44,7 @@ class Folder extends Model
                 $model->slug = Str::slug($model->name);
             }
 
-            // Validate: cannot change root folder to have parent
-            if ($model->is_root && $model->isDirty('parent_id') && !is_null($model->parent_id)) {
-                throw new \InvalidArgumentException('Root folders cannot have a parent folder.');
-            }
+            // No extra validation needed for is_root anymore
 
             // Validate: cannot create circular parent reference
             if ($model->isDirty('parent_id') && !is_null($model->parent_id)) {
@@ -170,7 +156,7 @@ class Folder extends Model
      */
     public function isRoot(): bool
     {
-        return $this->is_root === true;
+        return is_null($this->parent_id);
     }
 
     /**
@@ -203,7 +189,7 @@ class Folder extends Model
      */
     public function scopeOnlyLeafFolders($query)
     {
-        return $query->where('is_root', false);
+        return $query->whereNotNull('parent_id');
     }
 
     /**
@@ -241,16 +227,6 @@ class Folder extends Model
      */
     public function validateStructure(): bool
     {
-        // Root folders should not have documents directly (design decision)
-        if ($this->is_root && $this->hasDocuments()) {
-            return false;
-        }
-
-        // All non-root folders must have a parent
-        if (!$this->is_root && is_null($this->parent_id)) {
-            return false;
-        }
-
         return true;
     }
 }

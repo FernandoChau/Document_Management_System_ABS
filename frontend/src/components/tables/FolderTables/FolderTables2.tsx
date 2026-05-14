@@ -42,13 +42,18 @@ import { DocumentTextIcon, FolderOpenIcon } from "@heroicons/react/24/solid";
 import { AlertCircleIcon, CheckCircleIcon, DownloadIcon, FolderIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
+import { useAuth } from "@/context/AuthContext";
+
 
 interface FolderTables2Props {
   folderId?: string;
 }
 
 function FolderTables2({ folderId }: FolderTables2Props) {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [searchParams, setSearchParams] = useSearchParams();
+
   const [activeFolderModal, setActiveFolderModal] = useState<"create" | "edit" | null>(null);
   const [activeFileModal, setActiveFileModal] = useState<"create" | "edit" | null>(null);
   const [activeItemModal, setActiveItemModal] = useState<"share" | "permission" | "remove" | null>(null);
@@ -325,34 +330,15 @@ function FolderTables2({ folderId }: FolderTables2Props) {
   };
 
   const handleUploadFiles = async (files: File[]) => {
-    try {
-      setError(null);
-      // Upload com ou sem folderId (raiz se undefined)
-      await Promise.all(
-        files.map((file) => uploadDocument(currentFolderId, file)),
-      );
-
-      // ✅ Feedback visual
-      const isRootUpload = !currentFolderId;
-      const fileNames = files.map(f => f.name).join(", ");
-      const successMsg = isRootUpload
-        ? `${files.length} ficheiro(s) carregado(s) para raiz! (folder_id=NULL): ${fileNames}`
-        : `${files.length} ficheiro(s) carregado(s) para pasta! (folder_id=${currentFolderId}): ${fileNames}`;
-      console.log(`✅ ${successMsg}`);
-      setSuccess(successMsg);
-
-      // Recarrega automaticamente a lista
-      await refreshFolders();
-
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (error) {
-      const errorMsg =
-        error instanceof Error ? error.message : "Erro ao carregar ficheiros";
-      console.error("❌ Erro ao carregar ficheiros:", errorMsg);
-      setError(errorMsg);
-      throw error; // Re-throw para que o modal saiba do erro
-    }
+    // Feedback visual (o upload real já foi feito pelo Modal)
+    const isRootUpload = !currentFolderId;
+    const successMsg = isRootUpload
+      ? `${files.length} ficheiro(s) carregado(s) com sucesso!`
+      : `${files.length} ficheiro(s) carregado(s) para a pasta atual!`;
+    
+    setSuccess(successMsg);
+    await refreshFolders();
+    setTimeout(() => setSuccess(null), 3000);
   };
 
   const navigateToFolder = (targetFolderId?: string | null) => {
@@ -418,7 +404,6 @@ function FolderTables2({ folderId }: FolderTables2Props) {
   }
 
   const isEmpty = visibleFolders.length === 0 && visibleDocuments.length === 0;
-
   return (
     <div className=" max-h-[calc(100vh-110px)] overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -469,7 +454,8 @@ function FolderTables2({ folderId }: FolderTables2Props) {
           <Button
             onClick={handleCreateFolder}
             variant="primary"
-            className="h-10 bg-yellow-500 text-white dark:bg-yellow-400 dark:text-gray-950 hover:bg-yellow-400 dark:hover:bg-yellow-400"
+            disabled={currentFolderId ? !currentFolder?.permissions?.can_upload : !isAdmin}
+            className="h-10 bg-yellow-500 text-white dark:bg-yellow-400 dark:text-gray-950 hover:bg-yellow-400 dark:hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <FolderPlusIcon className="size-5" />
             {/* Criar Pasta */}
@@ -477,7 +463,8 @@ function FolderTables2({ folderId }: FolderTables2Props) {
           <Button
             onClick={handleCreateFile}
             variant="primary"
-            className="h-10 bg-brand-500 dark:bg-brand-500 dark:text-gray-950 dark:hover:opacity-95"
+            disabled={!currentFolderId || !currentFolder?.permissions?.can_upload}
+            className="h-10 bg-brand-500 dark:bg-brand-500 dark:text-gray-950 dark:hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <DocumentPlusIcon className="size-5" />
             {/* Subir Ficheiro */}
@@ -493,7 +480,14 @@ function FolderTables2({ folderId }: FolderTables2Props) {
         </div>
       )}
 
-      <div className="max-w-full max-h-[calc(100vh-200px)] overflow-x-auto">
+      {isEmpty && (
+        <div className="flex flex-col items-center justify-center gap-3 py-20">
+          <FolderIcon className="size-12 text-gray-300" />
+          <p className="text-lg text-gray-500">Sem ficheiros ou pastas para mostrar</p>
+        </div>
+      )}
+
+      {!isEmpty && (<div className="max-w-full max-h-[calc(100vh-200px)] overflow-x-auto">
         <Table>
           <TableHeader className=" sticky border-gray-100 dark:border-gray-800 border-y">
             <TableRow>
@@ -536,11 +530,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                     <div>
                       <p className="font-medium text-gray-700 text-theme-m dark:text-white/80">
                         {folder.name}
-                        {/* product.name */}
                       </p>
                       <p className="text-gray-500 text-theme-xs dark:text-gray-400">
                         Ref: {folder.reference_code}
-                        {/* Ref: product.variants */}
                       </p>
                     </div>
                   </div>
@@ -552,21 +544,24 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                   <div className="flex">
                     <button
                       onClick={() => handeEditFolderModal(folder)}
-                      className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
+                      disabled={!folder.permissions?.can_update_metadata}
+                      className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={!folder.permissions?.can_update_metadata ? "Sem permissão para editar" : "Editar"}
                     >
                       <PencilIcon className="size-4.5" />
                     </button>
                     <button
                       onClick={() => handleOpenItem(folder.id)}
                       className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
+                      title="Ver conteúdo"
                     >
                       <EyeIcon className="size-5" />
                     </button>
                     <button
                       onClick={() => handleDownloadFolder(folder)}
-                      disabled={downloadingId === folder.id}
+                      disabled={downloadingId === folder.id || !folder.permissions?.can_download}
                       className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Fazer download da pasta como ZIP"
+                      title={!folder.permissions?.can_download ? "Sem permissão para download" : "Fazer download da pasta como ZIP"}
                     >
                       {downloadingId === folder.id ? (
                         <div className="animate-spin h-4 w-4 border-2 border-brand-500 border-t-transparent rounded-full" />
@@ -588,22 +583,24 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                       >
                         <DropdownItem
                           onItemClick={() => handleShareItem(folder, "folder")}
-                          className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                          disabled={!folder.permissions?.can_share}
+                          className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 ${!folder.permissions?.can_share ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <PaperAirplaneIcon className=" -rotate-45 -mt-0.5 size-4.5" />
                           Partilhar
                         </DropdownItem>
                         <DropdownItem
                           onItemClick={() => handleSetPermission(folder, "folder")}
-                          className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                          disabled={!folder.permissions?.can_manage_permissions}
+                          className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 ${!folder.permissions?.can_manage_permissions ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <KeyIcon className="size-3.5 -rotate-180" />
                           Permissões
                         </DropdownItem>
-
                         <DropdownItem
                           onItemClick={() => handleRemoveItem(folder, "folder")}
-                          className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                          disabled={!folder.permissions?.can_delete}
+                          className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${!folder.permissions?.can_delete ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <TrashBinIcon />
                           Remover
@@ -634,11 +631,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                         <div>
                           <p className="font-medium text-gray-700 text-theme-m dark:text-white/80">
                             {document.name}
-                            {/* product.name */}
                           </p>
                           <p className="text-gray-500 text-theme-xs dark:text-gray-400">
                             Ref: {document.reference_code}
-                            {/* Ref: product.variants */}
                           </p>
                         </div>
                       </div>
@@ -648,14 +643,17 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                     </TableCell>
                     <TableCell className="py-5 pr-2 flex items-center justify-end gap-2 rounded-r-2xl text-gray-500 text-theme-sm dark:text-gray-400">
                       <div className="flex">
-                        <button className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full">
+                        <button 
+                          className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
+                          title="Ver documento"
+                        >
                           <EyeIcon className="size-5" />
                         </button>
                         <button
                           onClick={() => handleDownloadDocument(document)}
-                          disabled={downloadingId === document.id}
+                          disabled={downloadingId === document.id || !document.permissions?.can_download}
                           className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Fazer download do ficheiro"
+                          title={!document.permissions?.can_download ? "Sem permissão para download" : "Fazer download do ficheiro"}
                         >
                           {downloadingId === document.id ? (
                             <div className="animate-spin h-4 w-4 border-2 border-brand-500 border-t-transparent rounded-full" />
@@ -677,22 +675,24 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                           >
                             <DropdownItem
                               onItemClick={() => handleShareItem(document, "file")}
-                              className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                              disabled={!document.permissions?.can_share}
+                              className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 ${!document.permissions?.can_share ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               <PaperAirplaneIcon className=" -rotate-45 -mt-0.5 size-4.5" />
                               Partilhar
                             </DropdownItem>
                             <DropdownItem
                               onItemClick={() => handleSetPermission(document, "file")}
-                              className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                              disabled={!document.permissions?.can_manage_permissions}
+                              className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 ${!document.permissions?.can_manage_permissions ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               <KeyIcon className="size-3.5 -rotate-180" />
                               Permissões
                             </DropdownItem>
-
                             <DropdownItem
                               onItemClick={() => handleRemoveItem(document, "file")}
-                              className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                              disabled={!document.permissions?.can_delete}
+                              className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${!document.permissions?.can_delete ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                               <TrashBinIcon />
                               Remover
@@ -707,7 +707,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </div>)}
 
       {/* Modals */}
       <FileUploadModal

@@ -17,15 +17,7 @@ class StructureValidator
      */
     public function validateFolderData(array $data, ?Folder $existingFolder = null): array
     {
-        // Validate: if is_root=true, parent_id must not be set
-        if (isset($data['is_root']) && $data['is_root'] === true && isset($data['parent_id']) && !is_null($data['parent_id'])) {
-            throw new \InvalidArgumentException('Root folders cannot have a parent folder.');
-        }
-
-        // Validate: if is_root=false/null, parent_id must be set
-        if (isset($data['is_root']) && !$data['is_root'] && (!isset($data['parent_id']) || is_null($data['parent_id']))) {
-            throw new \InvalidArgumentException('Non-root folders must have a parent folder.');
-        }
+        // No is_root validation needed anymore. Logic: root if parent_id is null.
 
         // Validate: parent_id exists and is valid
         if (isset($data['parent_id']) && !is_null($data['parent_id'])) {

@@ -60,11 +60,25 @@ class FolderController extends Controller
         $parentId = $request->query('parent_id');
 
         if ($parentId) {
-            $folder = Folder::with('children', 'documents')->findOrFail($parentId);
+            $folder = Folder::with('children', 'documents', 'parent')->findOrFail($parentId);
+            $folder->path = $folder->ancestors();
 
             // Check permission
             if (!$this->authorizationService->canViewFolder($user, $folder)) {
                 return response()->json(['error' => 'Forbidden'], 403);
+            }
+
+            // Attach permissions to the folder itself
+            $folder->permissions = $this->authorizationService->resolveFolderPermissions($user, $folder);
+
+            // Attach permissions to children
+            foreach ($folder->children as $child) {
+                $child->permissions = $this->authorizationService->resolveFolderPermissions($user, $child);
+            }
+
+            // Attach permissions to documents
+            foreach ($folder->documents as $doc) {
+                $doc->permissions = $this->authorizationService->resolveDocumentPermissions($user, $doc);
             }
 
             AuditLogger::log($user, 'VIEW', $folder);
@@ -73,8 +87,13 @@ class FolderController extends Controller
 
         // Get roots user has access to
         $roots = $this->authorizationService->getViewableFolders($user)
-            ->where('is_root', true)
+            ->whereNull('parent_id')
             ->values();
+
+        // Attach permissions to each root
+        foreach ($roots as $root) {
+            $root->permissions = $this->authorizationService->resolveFolderPermissions($user, $root);
+        }
 
         return response()->json(['data' => $roots]);
     }
@@ -96,14 +115,12 @@ class FolderController extends Controller
             $this->structureValidator->validateFolderData([
                 'name' => $request->name,
                 'parent_id' => $request->parent_id,
-                'is_root' => is_null($request->parent_id),
             ]);
             
             // Additional validation with FolderValidator for edge cases
             $this->folderValidator->validateFolderData([
                 'name' => $request->name,
                 'parent_id' => $request->parent_id,
-                'is_root' => is_null($request->parent_id),
             ]);
         } catch (\InvalidArgumentException $e) {
             return response()->json(['error' => $e->getMessage()], 422);
@@ -260,6 +277,21 @@ class FolderController extends Controller
         }
 
         $folder->load(['children', 'documents', 'parent']);
+        $folder->path = $folder->ancestors();
+        
+        // Attach permissions to current folder
+        $folder->permissions = $this->authorizationService->resolveFolderPermissions($user, $folder);
+
+        // Attach permissions to children
+        foreach ($folder->children as $child) {
+            $child->permissions = $this->authorizationService->resolveFolderPermissions($user, $child);
+        }
+
+        // Attach permissions to documents
+        foreach ($folder->documents as $doc) {
+            $doc->permissions = $this->authorizationService->resolveDocumentPermissions($user, $doc);
+        }
+
         AuditLogger::log($user, 'VIEW', $folder);
         return response()->json($folder);
     }

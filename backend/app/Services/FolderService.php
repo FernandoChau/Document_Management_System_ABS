@@ -28,32 +28,21 @@ class FolderService
                 // ✅ SUBPASTA (child folder)
                 $referenceCode = $parent->reference_code . '.' . $slug;
                 $departmentId = null;
-                $isRoot = false;  // ✅ Subpasta: NOT root
             } else {
                 // ✅ PASTA RAIZ (root folder)
                 // Se tiver department, usa slug do department; senão usa slug da pasta
                 $referenceCode = $department ? $department->slug : $slug;
                 $departmentId = $department?->id;
-                $isRoot = true;  // ✅ Raiz: IS root
             }
 
-            // Cria a pasta com is_root definido correctamente
+            // Cria a pasta sem o campo is_root (agora calculado pelo parent_id === NULL)
             $folder = Folder::create([
                 'name' => $name,
                 'slug' => $slug,
                 'parent_id' => $parent?->id,  // ✅ NULL para raiz, ID para subpasta
                 'department_id' => $departmentId,
                 'reference_code' => $referenceCode,
-                'is_root' => $isRoot,  // ✅ true para raiz, false para subpasta
             ]);
-            
-            // Criar permissões básicas baseado se é subpasta
-            if (!$isRoot) {
-                $folder->permissions()->create([
-                    'user_id' => $creator->id,
-                    'permission_level' => 'manage',
-                ]);
-            }
 
             return $folder;
         });

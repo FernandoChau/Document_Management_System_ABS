@@ -1,5 +1,16 @@
 import api from "./axios";
 
+export interface Permissions {
+  can_view: boolean;
+  can_update_metadata: boolean;
+  can_delete: boolean;
+  can_upload: boolean;
+  can_share: boolean;
+  can_download: boolean;
+  can_manage_permissions: boolean;
+}
+
+
 /**
  * Interface para dados do Folder
  */
@@ -11,9 +22,9 @@ export interface Folder {
   reference_code: string;
   parent_id?: string;
   department_id?: string;
-  is_root: boolean;
   created_at?: string;
   updated_at?: string;
+  permissions?: Permissions;
 }
 
 /**
@@ -32,12 +43,14 @@ export interface Document {
   user_id: string;
   created_at?: string;
   updated_at?: string;
+  permissions?: Permissions;
 }
 
 export interface FolderDetails extends Folder {
   children?: Folder[];
   documents?: Document[];
   parent?: Folder | null;
+  path?: Folder[];
 }
 
 export interface FolderContents {
@@ -132,8 +145,7 @@ function extractFolderDetails(payload: unknown): FolderDetails | null {
 
   if (
     "id" in obj &&
-    "name" in obj &&
-    "is_root" in obj
+    "name" in obj
   ) {
     return obj as FolderDetails;
   }

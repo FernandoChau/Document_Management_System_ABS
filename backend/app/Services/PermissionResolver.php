@@ -20,29 +20,38 @@ class PermissionResolver
      */
     public function resolveFolderPermissions(User $user, Folder $folder): array
     {
-        // Admin has all permissions
+        // 1. Admin has all permissions
         if ($user->isAdmin()) {
             return $this->getAllPermissions();
         }
 
-        // Folder owner has all permissions
+        // 2. Ownership (Recursive check implemented in isFolderResponsible)
         if ($this->isFolderResponsible($user, $folder)) {
             return $this->getAllPermissions();
         }
 
-        // Check if access is blocked by ancestors
-        if ($this->isBlockedByAncestors($user, $folder)) {
-            return $this->getNoPermissions();
+        // 3. Check for explicit local permissions (User or Group)
+        $hasLocalUserPerm = $folder->permissions()->where('user_id', $user->id)->exists();
+        $hasLocalGroupPerm = $folder->permissions()
+            ->whereIn('group_id', $user->groups->pluck('id'))
+            ->exists();
+
+        if ($hasLocalUserPerm || $hasLocalGroupPerm) {
+            // Local overrides found, merge and return them
+            $permissions = $this->mergePermissions(
+                $this->getGroupPermissions($user, $folder),
+                $this->getUserPermissions($user, $folder)
+            );
+            return $this->enforceViewPrerequisite($permissions);
         }
 
-        // Merge group and user permissions
-        $permissions = $this->mergePermissions(
-            $this->getGroupPermissions($user, $folder),
-            $this->getUserPermissions($user, $folder)
-        );
+        // 4. Inherit from parent if no local permissions are set
+        if ($folder->parent) {
+            return $this->resolveFolderPermissions($user, $folder->parent);
+        }
 
-        // Validate view prerequisite
-        return $this->enforceViewPrerequisite($permissions);
+        // 5. Default to no permissions if we reach the root with no matches
+        return $this->getNoPermissions();
     }
 
     /**
@@ -146,11 +155,31 @@ class PermissionResolver
      */
     private function isFolderResponsible(User $user, Folder $folder): bool
     {
-        return \DB::table('folder_responsibles')
+        // Check if user is responsible for the current folder
+        $isResponsible = \DB::table('folder_responsibles')
             ->where('folder_id', $folder->id)
             ->where('user_id', $user->id)
             ->where('is_owner', true)
             ->exists();
+
+        if ($isResponsible) {
+            return true;
+        }
+
+        // Check if user is responsible for any ancestor folder
+        foreach ($folder->ancestors() as $ancestor) {
+            $isAncestorResponsible = \DB::table('folder_responsibles')
+                ->where('folder_id', $ancestor->id)
+                ->where('user_id', $user->id)
+                ->where('is_owner', true)
+                ->exists();
+
+            if ($isAncestorResponsible) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

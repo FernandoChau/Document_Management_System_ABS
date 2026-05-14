@@ -1,0 +1,20 @@
+[
+    {
+        "id": "019dd2e6-417f-73dc-993f-c20d8d23eed1",
+        "name": "Pasta Raiz Exemplo",
+        "is_root": true,
+        "parent_id": null
+    },
+    {
+        "id": "019dd2f3-6135-7311-ac4a-6c08fc6db012",
+        "name": "Pasta Raiz Teste",
+        "is_root": true,
+        "parent_id": null
+    },
+    {
+        "id": "019dd3e5-3307-7397-841f-883fd6f73727",
+        "name": "Pasta Teste",
+        "is_root": true,
+        "parent_id": null
+    }
+]

@@ -146,20 +146,6 @@ class DocumentValidator
         }
     }
 
-    /**
-     * Validate that document is not in root folder
-     * Documents cannot be uploaded directly to root
-     * 
-     * @param Folder $folder
-     * @return void
-     * @throws \InvalidArgumentException
-     */
-    public function validateNotInRoot(Folder $folder): void
-    {
-        if ($folder->is_root) {
-            throw new \InvalidArgumentException('Documents cannot be uploaded directly to the root folder.');
-        }
-    }
 
     /**
      * Validate document exists and is not deleted

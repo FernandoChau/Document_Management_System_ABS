@@ -37,16 +37,8 @@ class AuthorizationService
         return $this->permissionResolver->resolveFolderPermissions($user, $folder);
     }
 
-    /**
-     * Check if user can upload to a folder
-     */
     public function canUploadToFolder(User $user, Folder $folder): bool
     {
-        // Root folder: admin only
-        if ($folder->isRoot() && !$user->isAdmin()) {
-            return false;
-        }
-
         if ($user->isAdmin()) {
             return true;
         }
@@ -55,54 +47,23 @@ class AuthorizationService
         return $permissions['can_view'] && $permissions['can_upload'];
     }
 
-    /**
-     * Check if user can manage folder permissions
-     */
     public function canManageFolderPermissions(User $user, Folder $folder): bool
     {
-        // Root folder: admin only
-        if ($folder->isRoot() && !$user->isAdmin()) {
-            return false;
-        }
-
         if ($user->isAdmin()) {
             return true;
         }
 
-        // Check if user is folder responsible (owner)
-        $isResponsible = $folder->responsibles()
-            ->where('user_id', $user->id)
-            ->where('is_owner', true)
-            ->exists();
-
-        return $isResponsible;
+        $permissions = $this->permissionResolver->resolveFolderPermissions($user, $folder);
+        return $permissions['can_view'] && $permissions['can_manage_permissions'];
     }
 
-    /**
-     * Check if user can delete a folder
-     */
     public function canDeleteFolder(User $user, Folder $folder): bool
     {
-        // Root folder: admin only
-        if ($folder->isRoot() && !$user->isAdmin()) {
-            return false;
-        }
-
         if ($user->isAdmin()) {
             return true;
         }
 
-        // Check if user is folder responsible (owner)
-        $isResponsible = $folder->responsibles()
-            ->where('user_id', $user->id)
-            ->where('is_owner', true)
-            ->exists();
-
-        if (!$isResponsible) {
-            return false;
-        }
-
-        // Also check folder-level delete permission
+        // Check resolved permissions
         $permissions = $this->permissionResolver->resolveFolderPermissions($user, $folder);
         return $permissions['can_view'] && $permissions['can_delete'];
     }

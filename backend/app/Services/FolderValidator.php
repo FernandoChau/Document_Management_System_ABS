@@ -17,14 +17,9 @@ class FolderValidator
      */
     public function validateFolderData(array $data, ?Folder $existingFolder = null): array
     {
-        // Validate: if is_root=true, parent_id must not be set
-        if (isset($data['is_root']) && $data['is_root'] === true && isset($data['parent_id']) && !is_null($data['parent_id'])) {
-            throw new \InvalidArgumentException('Root folders cannot have a parent folder.');
-        }
-
-        // Validate: if is_root=false/null, parent_id must be set
-        if (isset($data['is_root']) && !$data['is_root'] && (!isset($data['parent_id']) || is_null($data['parent_id']))) {
-            throw new \InvalidArgumentException('Non-root folders must have a parent folder.');
+        // No is_root validation needed anymore. Logic: root if parent_id is null.
+        if (isset($data['is_root'])) {
+            unset($data['is_root']);
         }
 
         // Validate: parent_id exists and is valid
@@ -141,7 +136,7 @@ class FolderValidator
      */
     public function validateNotRoot(Folder $folder): void
     {
-        if ($folder->is_root) {
+        if ($folder->isRoot()) {
             throw new \InvalidArgumentException('This operation cannot be performed on the root folder.');
         }
     }

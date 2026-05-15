@@ -89,6 +89,18 @@ class AuthorizationService
         return $this->permissionResolver->resolveDocumentPermissions($user, $document);
     }
 
+    public function hasFolderPermission(User $user, Folder $folder, string $permission): bool
+    {
+        $permissions = $this->resolveFolderPermissions($user, $folder);
+        return $permissions[$permission] ?? false;
+    }
+
+    public function hasDocumentPermission(User $user, Document $document, string $permission): bool
+    {
+        $permissions = $this->resolveDocumentPermissions($user, $document);
+        return $permissions[$permission] ?? false;
+    }
+
     /**
      * Check if user can download a document
      */
@@ -177,37 +189,20 @@ class AuthorizationService
             return Document::all();
         }
 
-        // Get documents via folder permissions
-        $folderIds = \DB::table('folder_permissions')
-            ->where(function ($query) use ($user) {
-                $query->where('user_id', $user->id)
-                    ->orWhereIn('group_id', $user->groups()->pluck('groups.id')); // fix: groups.id
-            })
-            ->where('can_view', true)
-            ->distinct()
-            ->pluck('folder_id');
+        $userGroupIds = $user->groups()->pluck('groups.id')->toArray();
 
-        // Add folders where user is responsible
-        $responsibleFolderIds = \DB::table('folder_responsibles')
-            ->where('user_id', $user->id)
-            ->pluck('folder_id');
-        
-        $allFolderIds = $folderIds->merge($responsibleFolderIds)->unique();
+        return Document::where(function ($query) use ($user, $userGroupIds) {
+            $query->where('user_id', $user->id)
+                ->orWhereHas('permissions', function ($permissionQuery) use ($user, $userGroupIds) {
+                    $permissionQuery->where('can_view', true)
+                        ->where(function ($innerQuery) use ($user, $userGroupIds) {
+                            $innerQuery->where('user_id', $user->id);
 
-        $documents = Document::whereIn('folder_id', $allFolderIds)->get();
-
-        // Add document-specific permissions
-        $docIds = \DB::table('document_permissions')
-            ->where(function ($query) use ($user) {
-                $query->where('user_id', $user->id)
-                    ->orWhereIn('group_id', $user->groups()->pluck('groups.id')); // fix: groups.id
-            })
-            ->where('can_view', true)
-            ->distinct()
-            ->pluck('document_id');
-
-        $documents = $documents->merge(Document::whereIn('id', $docIds)->get());
-
-        return $documents->unique();
+                            if (!empty($userGroupIds)) {
+                                $innerQuery->orWhereIn('group_id', $userGroupIds);
+                            }
+                        });
+                });
+        })->get()->unique('id');
     }
 }

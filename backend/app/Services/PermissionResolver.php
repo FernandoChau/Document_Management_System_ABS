@@ -20,38 +20,20 @@ class PermissionResolver
      */
     public function resolveFolderPermissions(User $user, Folder $folder): array
     {
-        // 1. Admin has all permissions
         if ($user->isAdmin()) {
             return $this->getAllPermissions();
         }
 
-        // 2. Ownership (Recursive check implemented in isFolderResponsible)
         if ($this->isFolderResponsible($user, $folder)) {
             return $this->getAllPermissions();
         }
 
-        // 3. Check for explicit local permissions (User or Group)
-        $hasLocalUserPerm = $folder->permissions()->where('user_id', $user->id)->exists();
-        $hasLocalGroupPerm = $folder->permissions()
-            ->whereIn('group_id', $user->groups->pluck('id'))
-            ->exists();
+        $permissions = $this->mergePermissions(
+            $this->getGroupPermissions($user, $folder),
+            $this->getUserPermissions($user, $folder)
+        );
 
-        if ($hasLocalUserPerm || $hasLocalGroupPerm) {
-            // Local overrides found, merge and return them
-            $permissions = $this->mergePermissions(
-                $this->getGroupPermissions($user, $folder),
-                $this->getUserPermissions($user, $folder)
-            );
-            return $this->enforceViewPrerequisite($permissions);
-        }
-
-        // 4. Inherit from parent if no local permissions are set
-        if ($folder->parent) {
-            return $this->resolveFolderPermissions($user, $folder->parent);
-        }
-
-        // 5. Default to no permissions if we reach the root with no matches
-        return $this->getNoPermissions();
+        return $this->enforceViewPrerequisite($permissions);
     }
 
     /**
@@ -63,25 +45,17 @@ class PermissionResolver
      */
     public function resolveDocumentPermissions(User $user, Document $document): array
     {
-        // Admin has all permissions
         if ($user->isAdmin()) {
             return $this->getAllPermissions();
         }
 
-        // First check folder permissions (documents inherit from folder)
-        $folderPermissions = $this->resolveFolderPermissions($user, $document->folder);
-
-        if (!$folderPermissions['can_view']) {
-            return $this->getNoPermissions();
+        if ($document->user_id === $user->id) {
+            return $this->getAllPermissions();
         }
 
-        // Then merge with document-specific permissions
         $permissions = $this->mergePermissions(
-            $folderPermissions,
-            $this->mergePermissions(
-                $this->getGroupDocumentPermissions($user, $document),
-                $this->getUserDocumentPermissions($user, $document)
-            )
+            $this->getGroupDocumentPermissions($user, $document),
+            $this->getUserDocumentPermissions($user, $document)
         );
 
         return $this->enforceViewPrerequisite($permissions);
@@ -155,31 +129,11 @@ class PermissionResolver
      */
     private function isFolderResponsible(User $user, Folder $folder): bool
     {
-        // Check if user is responsible for the current folder
-        $isResponsible = \DB::table('folder_responsibles')
+        return \DB::table('folder_responsibles')
             ->where('folder_id', $folder->id)
             ->where('user_id', $user->id)
             ->where('is_owner', true)
             ->exists();
-
-        if ($isResponsible) {
-            return true;
-        }
-
-        // Check if user is responsible for any ancestor folder
-        foreach ($folder->ancestors() as $ancestor) {
-            $isAncestorResponsible = \DB::table('folder_responsibles')
-                ->where('folder_id', $ancestor->id)
-                ->where('user_id', $user->id)
-                ->where('is_owner', true)
-                ->exists();
-
-            if ($isAncestorResponsible) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

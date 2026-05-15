@@ -1,5 +1,4 @@
 import {
-  canAccessFolder,
   createFolder,
   Document,
   Folder,
@@ -250,19 +249,15 @@ function FolderTables2({ folderId }: FolderTables2Props) {
       setError(null);
 
       const data = await getFolderContents(currentFolderId);
-      const accessibleFolders = await Promise.all(
-        data.folders.map(async (folder) => ({
-          folder,
-          canView: await canAccessFolder(folder.id),
-        })),
+      const accessibleFolders = data.folders.filter(
+        (folder) => folder.permissions?.can_view,
+      );
+      const accessibleDocuments = data.documents.filter(
+        (document) => document.permissions?.can_view,
       );
 
-      setFolders(
-        accessibleFolders
-          .filter((entry) => entry.canView)
-          .map((entry) => entry.folder),
-      );
-      setDocuments(data.documents);
+      setFolders(accessibleFolders);
+      setDocuments(accessibleDocuments);
       setCurrentFolder(data.currentFolder);
 
       if (!currentFolderId || !data.currentFolder) {

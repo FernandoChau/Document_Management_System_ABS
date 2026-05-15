@@ -72,8 +72,21 @@ class DocumentService
                 'sequence_number' => $sequence,
                 'user_id' => $uploader->id,
             ]);
+
+            // 5. Create explicit document permissions for the uploader.
+            // This makes the uploader the explicit owner of the document,
+            // similar to Linux file ownership.
+            $document->permissions()->create([
+                'user_id' => $uploader->id,
+                'can_view' => true,
+                'can_update_metadata' => true,
+                'can_delete' => true,
+                'can_download' => true,
+                'can_share' => true,
+                'can_manage_permissions' => true,
+            ]);
             
-            // 5. Trigger Async Extraction (Dispatch Job)
+            // 6. Trigger Async Extraction (Dispatch Job)
             // ExtractDocumentTextJob::dispatch($document); // To be implemented
             
             return $document;

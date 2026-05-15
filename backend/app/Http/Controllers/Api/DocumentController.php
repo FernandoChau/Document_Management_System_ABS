@@ -278,7 +278,22 @@ class DocumentController extends Controller
                 return response()->json(['error' => $e->getMessage()], 403);
             }
 
-            $query->where('folder_id', $request->folder_id);
+            $userGroupIds = $user->groups()->pluck('groups.id')->toArray();
+
+            $query->where('folder_id', $request->folder_id)
+                ->where(function ($query) use ($user, $userGroupIds) {
+                    $query->where('user_id', $user->id)
+                        ->orWhereHas('permissions', function ($permissionQuery) use ($user, $userGroupIds) {
+                            $permissionQuery->where('can_view', true)
+                                ->where(function ($innerQuery) use ($user, $userGroupIds) {
+                                    $innerQuery->where('user_id', $user->id);
+
+                                    if (!empty($userGroupIds)) {
+                                        $innerQuery->orWhereIn('group_id', $userGroupIds);
+                                    }
+                                });
+                        });
+                });
         } else {
             // If no folder specified, return documents user has access to
             // This requires checking permissions on all documents

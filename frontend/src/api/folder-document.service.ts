@@ -162,9 +162,9 @@ function extractFolderDetails(payload: unknown): FolderDetails | null {
  */
 export function getFolder(id?: string | null) {
   if (id == null)
-    return api.get<GetFolderResponse>("pastas");
+    return api.get<GetFolderResponse>("/pastas");
 
-  return api.get<GetFolderResponse>(`pastas?parent_id=${id}`);
+  return api.get<GetFolderResponse>(`/pastas?parent_id=${id}`);
 }
 
 /**
@@ -232,6 +232,80 @@ export const getDocumentById = async (
   // console.log(`Fetching document with ID: ${documentId}`);
   const response = await api.get(`/documentos/${documentId}`);
   return response.data.data || response.data;
+};
+
+export interface LogEntry {
+  timestamp: string;
+  utilizador: string;
+  acao: string;
+  detalhes?: string;
+}
+
+interface RawAuditLog {
+  created_at?: string;
+  action?: string;
+  metadata?: Record<string, unknown> | null;
+  user?: {
+    name?: string;
+    email?: string;
+  } | null;
+  [key: string]: unknown;
+}
+
+const parseLogEntry = (raw: RawAuditLog): LogEntry => {
+  const timestamp = raw.created_at || "";
+  const utilizador =
+    raw.user?.name ||
+    raw.user?.email ||
+    (typeof raw.metadata?.utilizador === "string" ? raw.metadata.utilizador : "") ||
+    (typeof raw.metadata?.user === "string" ? raw.metadata.user : "") ||
+    "Sistema";
+  const acao = raw.action || "";
+
+  let detalhes = "";
+  if (raw.metadata) {
+    if (typeof raw.metadata === "object") {
+      if (typeof raw.metadata.detalhes === "string") {
+        detalhes = raw.metadata.detalhes;
+      } else if (typeof raw.metadata.details === "string") {
+        detalhes = raw.metadata.details;
+      } else {
+        const metadataEntries = Object.entries(raw.metadata)
+          .filter(([key, value]) => key !== "detalhes" && key !== "details")
+          .map(([key, value]) => `${key}: ${JSON.stringify(value)}`);
+        detalhes = metadataEntries.join("; ");
+      }
+    }
+  }
+
+  return {
+    timestamp,
+    utilizador,
+    acao,
+    detalhes: detalhes || undefined,
+  };
+};
+
+export const getLogs = async (
+  type: "file" | "folder",
+  id: string,
+): Promise<LogEntry[]> => {
+  const path =
+    type === "file"
+      ? `/documentos/${id}/logs`
+      : `/auditoria/pasta/${id}/logs`;
+
+  const response = await api.get(path);
+
+  const data = Array.isArray(response.data)
+    ? response.data
+    : Array.isArray(response.data.data)
+    ? response.data.data
+    : Array.isArray(response.data.logs)
+    ? response.data.logs
+    : [];
+
+  return (data as RawAuditLog[]).map(parseLogEntry);
 };
 
 /**
@@ -363,7 +437,7 @@ export const updateFolder = async (
   folderId: string,
   data: Partial<Folder>,
 ): Promise<Folder> => {
-  const response = await api.put(`/folders/${folderId}`, data);
+  const response = await api.put(`/pastas/${folderId}`, data);
   return response.data.data || response.data;
 };
 
@@ -374,7 +448,7 @@ export const updateDocument = async (
   documentId: string,
   data: Partial<Document>,
 ): Promise<Document> => {
-  const response = await api.put(`/documents/${documentId}`, data);
+  const response = await api.put(`/documentos/${documentId}`, data);
   return response.data.data || response.data;
 };
 
@@ -382,7 +456,7 @@ export const updateDocument = async (
  * Download de uma pasta como ZIP
  */
 export const downloadFolder = async (folderId: string): Promise<Blob> => {
-  const response = await api.get(`/pastas/${folderId}/download`, {
+  const response = await api.get(`/pastas/${folderId}/baixar`, {
     responseType: "blob",
   });
   return response.data as Blob;
@@ -392,7 +466,7 @@ export const downloadFolder = async (folderId: string): Promise<Blob> => {
  * Download de um documento
  */
 export const downloadDocument = async (documentId: string): Promise<Blob> => {
-  const response = await api.get(`/documentos/${documentId}/download`, {
+  const response = await api.get(`/documentos/${documentId}/baixar`, {
     responseType: "blob",
   });
   return response.data as Blob;

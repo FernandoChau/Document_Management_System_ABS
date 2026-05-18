@@ -40,9 +40,9 @@ export default function UserDropdown() {
     <div className="relative">
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="relative px-2 flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full dropdown-toggle hover:text-gray-700 h-11 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
+        className="relative  flex items-center justify-center text-gray-500 transition-colors bg-white border border-gray-200 rounded-full dropdown-toggle hover:text-gray-700 h-11 hover:bg-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white"
       >
-        <span className="mr-3 flex items-center justify-center overflow-hidden rounded-full h-11 w-11 bg-brand-500 text-white font-semibold">
+        <span className="mr-3 flex items-center justify-center overflow-hidden rounded-full h-10 w-10 my-1 mx-0.75 bg-gray-200 text-gray-700 dark:text-gray-400 font-semibold">
           {initials}
         </span>
 

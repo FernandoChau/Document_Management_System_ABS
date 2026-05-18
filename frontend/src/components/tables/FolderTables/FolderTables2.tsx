@@ -7,10 +7,13 @@ import {
   uploadDocument,
   downloadFolder,
   downloadDocument,
+  getLogs,
+  LogEntry,
 } from "@/api/folder-document.service";
 import PermissionModal from "@/components/modals/PermissionModal";
 import RemoveModal from "@/components/modals/RemoveModal";
 import ShareModal from "@/components/modals/ShareModal";
+import LogsModal from "@/components/modals/LogsModal";
 import Button from "@/components/ui/button/Button";
 import { Dropdown } from "@/components/ui/dropdown/Dropdown";
 import { DropdownItem } from "@/components/ui/dropdown/DropdownItem";
@@ -55,9 +58,12 @@ function FolderTables2({ folderId }: FolderTables2Props) {
 
   const [activeFolderModal, setActiveFolderModal] = useState<"create" | "edit" | null>(null);
   const [activeFileModal, setActiveFileModal] = useState<"create" | "edit" | null>(null);
-  const [activeItemModal, setActiveItemModal] = useState<"share" | "permission" | "remove" | null>(null);
+  const [activeItemModal, setActiveItemModal] = useState<"share" | "permission" | "remove" | "logs" | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [itemType, setItemType] = useState<string | null>(null);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+  const [logsError, setLogsError] = useState<string | null>(null);
 
   const [documents, setDocuments] = useState<Document[]>([]);
   const [folderData, setFolderData] = useState<Folder | Document | null>(null);
@@ -149,6 +155,34 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     setFolderData(data); // ✅ No cast - allows Folder | Document
     setActiveItemModal("permission")
     closeDropdown();
+  };
+
+  const handleOpenLogs = async (data: Folder | Document, fileType: "file" | "folder") => {
+    setItemType(fileType);
+    setFolderData(data);
+    setLogs([]);
+    setLogsError(null);
+    setLogsLoading(true);
+    setActiveItemModal("logs");
+    closeDropdown();
+
+    try {
+      const response = await getLogs(fileType, data.id);
+      setLogs(response);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Erro ao carregar logs";
+      setLogsError(errorMsg);
+      console.error("Erro ao carregar logs:", err);
+    } finally {
+      setLogsLoading(false);
+    }
+  };
+
+  const handleCloseLogs = () => {
+    setActiveItemModal(null);
+    setLogs([]);
+    setLogsError(null);
+    setLogsLoading(false);
   };
 
   const handeEditFolderModal = (data: Folder) => {
@@ -330,7 +364,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     const successMsg = isRootUpload
       ? `${files.length} ficheiro(s) carregado(s) com sucesso!`
       : `${files.length} ficheiro(s) carregado(s) para a pasta atual!`;
-    
+
     setSuccess(successMsg);
     await refreshFolders();
     setTimeout(() => setSuccess(null), 3000);
@@ -416,11 +450,10 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                 <span className="text-gray-400">/</span>
                 <button
                   onClick={() => navigateToFolder(crumb.id)}
-                  className={`${
-                    crumb.id === currentFolderId
-                      ? "font-bold text-gray-900 dark:text-white"
-                      : "font-medium hover:text-brand-600 dark:hover:text-brand-400"
-                  }`}
+                  className={`${crumb.id === currentFolderId
+                    ? "font-bold text-gray-900 dark:text-white"
+                    : "font-medium hover:text-brand-600 dark:hover:text-brand-400"
+                    }`}
                 >
                   {crumb.name}
                 </button>
@@ -546,9 +579,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                       <PencilIcon className="size-4.5" />
                     </button>
                     <button
-                      onClick={() => handleOpenItem(folder.id)}
+                      onClick={() => handleOpenLogs(folder, "folder")}
                       className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
-                      title="Ver conteúdo"
+                      title="Ver logs"
                     >
                       <EyeIcon className="size-5" />
                     </button>
@@ -638,9 +671,10 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                     </TableCell>
                     <TableCell className="py-5 pr-2 flex items-center justify-end gap-2 rounded-r-2xl text-gray-500 text-theme-sm dark:text-gray-400">
                       <div className="flex">
-                        <button 
+                        <button
+                          onClick={() => handleOpenLogs(document, "file")}
                           className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
-                          title="Ver documento"
+                          title="Ver logs"
                         >
                           <EyeIcon className="size-5" />
                         </button>
@@ -746,6 +780,15 @@ function FolderTables2({ folderId }: FolderTables2Props) {
           setActiveItemModal(null);
           refreshFolders();
         }}
+      />
+
+      <LogsModal
+        isOpen={activeItemModal === "logs"}
+        onClose={handleCloseLogs}
+        itemName={folderData?.name || ""}
+        logs={logs}
+        isLoading={logsLoading}
+        error={logsError}
       />
 
       <RemoveModal

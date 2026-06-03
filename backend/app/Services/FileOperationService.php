@@ -37,7 +37,8 @@ class FileOperationService
     public function downloadFolder(User $user, Folder $folder): StreamedResponse
     {
         // Validar permissão de download
-        $permissions = $this->permissionValidator->validateFolderAction($user, $folder, 'download');
+        $result = $this->permissionValidator->validateFolderAction($user, $folder, 'download');
+        $permissions = $result['permissions'] ?? $result;
         
         if (!$permissions['can_download']) {
             throw new PermissionDeniedException('Você não tem permissão para fazer download desta pasta.');
@@ -62,7 +63,8 @@ class FileOperationService
     public function downloadDocument(User $user, Document $document): StreamedResponse
     {
         // Validar permissão de download
-        $permissions = $this->permissionValidator->validateDocumentAction($user, $document, 'download');
+        $result = $this->permissionValidator->validateDocumentAction($user, $document, 'download');
+        $permissions = $result['permissions'] ?? $result;
         
         if (!$permissions['can_download']) {
             throw new PermissionDeniedException('Você não tem permissão para fazer download deste documento.');
@@ -248,13 +250,23 @@ class FileOperationService
      */
     private function streamZip(string $zipPath, string $filename): StreamedResponse
     {
-        return response()->streamDownload(function () use ($zipPath) {
+        $response = response()->streamDownload(function () use ($zipPath) {
             readfile($zipPath);
             @unlink($zipPath); // Clean up after streaming
         }, $filename, [
             'Content-Type' => 'application/zip',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Disposition' => "attachment; filename=\"{{$filename}}\"",
         ]);
+
+        // Add CORS headers for browser downloads
+        $origin = request()->header('Origin');
+        if ($origin) {
+            $response->headers->set('Access-Control-Allow-Origin', $origin);
+            $response->headers->set('Access-Control-Allow-Credentials', 'true');
+            $response->headers->set('Access-Control-Expose-Headers', 'Content-Length, Content-Disposition');
+        }
+
+        return $response;
     }
 
     /**
@@ -262,11 +274,21 @@ class FileOperationService
      */
     private function streamFile(string $filePath, string $filename, string $mimeType): StreamedResponse
     {
-        return response()->streamDownload(function () use ($filePath) {
+        $response = response()->streamDownload(function () use ($filePath) {
             echo Storage::disk('private')->get($filePath);
         }, $filename, [
             'Content-Type' => $mimeType,
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Content-Disposition' => "attachment; filename=\"{{$filename}}\"",
         ]);
+
+        // Add CORS headers for browser downloads
+        $origin = request()->header('Origin');
+        if ($origin) {
+            $response->headers->set('Access-Control-Allow-Origin', $origin);
+            $response->headers->set('Access-Control-Allow-Credentials', 'true');
+            $response->headers->set('Access-Control-Expose-Headers', 'Content-Length, Content-Disposition');
+        }
+
+        return $response;
     }
 }

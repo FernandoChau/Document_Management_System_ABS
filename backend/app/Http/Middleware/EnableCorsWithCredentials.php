@@ -61,8 +61,13 @@ class EnableCorsWithCredentials
         $response = $next($request);
 
         // Adicionar headers CORS à resposta
+        // Usar headers->set() para StreamedResponse, header() para Response normal
         foreach ($corsHeaders as $header => $value) {
-            $response->header($header, $value);
+            if (method_exists($response, 'header')) {
+                $response->header($header, $value);
+            } else {
+                $response->headers->set($header, $value);
+            }
         }
 
         return $response;

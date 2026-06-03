@@ -135,12 +135,6 @@ function ReportsTable() {
               </TableCell>
               <TableCell
                 isHeader
-                className="py-3 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
-              >
-                Responsável
-              </TableCell>
-              <TableCell
-                isHeader
                 className="py-3 w-5 font-medium text-gray-500 text-start text-theme-xs dark:text-gray-400"
               >
                 Acção
@@ -150,7 +144,7 @@ function ReportsTable() {
 
           {/* Table Body */}
 
-          <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+          {/* <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
 
             {tableData.map((product) => (
               <TableRow key={product.id} className=" cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30">
@@ -225,8 +219,13 @@ function ReportsTable() {
                 </TableCell>
               </TableRow>
             ))}
-          </TableBody>
+          </TableBody> */}
+        
         </Table>
+        <div className="flex flex-col items-center justify-center gap-3 py-20 w-full ">
+          <DocumentTextIcon className="size-12 text-gray-300" />
+          <p className="text-lg text-gray-500">Sem Relatorios disponivel</p>
+        </div>
       </div>
     </div>
   )

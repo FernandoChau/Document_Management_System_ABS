@@ -11,6 +11,7 @@ const PUBLIC_AUTH_ENDPOINTS = [
   "/registar",
   "/recuperar-senha",
   "/redefinir-senha",
+  "/compartilhamentos",
 ];
 
 let unauthorizedHandler: (() => void) | null = null;

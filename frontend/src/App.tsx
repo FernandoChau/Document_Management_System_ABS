@@ -28,6 +28,7 @@ import Reports from "./pages/Reports/Reports";
 import Users from "./pages/Users/Users";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import PublicRoute from "./components/auth/PublicRoute";
+import PublicShare from "./pages/PublicShare/PublicShare";
 
 export default function App() {
   return (
@@ -125,6 +126,9 @@ export default function App() {
               </PublicRoute>
             }
           />
+
+          {/* Public Share Route */}
+          <Route path="/public/share/:token" element={<PublicShare />} />
 
           {/* Fallback Route */}
           <Route path="*" element={<NotFound />} />

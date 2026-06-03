@@ -521,6 +521,33 @@ export const deleteShareLink = async (shareLinkId: string): Promise<void> => {
 };
 
 /**
+ * Obter detalhes de um link de compartilhamento (público)
+ */
+export const getShareLinkDetails = async (
+  token: string,
+  password?: string,
+): Promise<{
+  id: string;
+  type: "Document" | "Folder";
+  resource: {
+    id: string;
+    name: string;
+    description?: string;
+    mime_type?: string;
+    size?: number;
+    reference_code?: string;
+    created_at?: string;
+  };
+  created_at: string;
+  expires_at?: string;
+}> => {
+  const response = await api.get(`/compartilhamentos/${token}`, {
+    params: password ? { password } : undefined,
+  });
+  return response.data;
+};
+
+/**
  * Download de um documento via link de compartilhamento
  */
 export const downloadViaShareLink = async (
@@ -528,7 +555,7 @@ export const downloadViaShareLink = async (
   password?: string,
 ): Promise<Blob> => {
   const response = await api.get(
-    `/public/share/${token}/download`,
+    `/compartilhamentos/${token}/baixar`,
     {
       params: password ? { password } : undefined,
       responseType: "blob",

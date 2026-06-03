@@ -8,7 +8,7 @@ import CreateAlbumModal from "./CreateAlbumModal";
 
 export default function Images() {
   const { user } = useAuth();
-  const isManager = user?.role === "admin" || user?.role === "image_manager";
+  const isManager = user?.role === "admin" || (user?.role as string) === "image_manager";
 
   const [albums, setAlbums] = useState<any[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Storage;
 
 class ExtractDocumentText implements ShouldQueue
 {
@@ -27,7 +28,7 @@ class ExtractDocumentText implements ShouldQueue
      */
     public function handle(): void
     {
-        $path = storage_path('app/' . $this->document->file_path);
+        $path = Storage::disk('private')->path($this->document->file_path);
         $mime = $this->document->mime_type;
         $text = '';
         $status = 'failed';

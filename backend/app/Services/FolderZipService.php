@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Folder;
 use ZipArchive;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class FolderZipService
 {
@@ -96,7 +97,7 @@ class FolderZipService
         $documents = $folder->documents()->get();
         foreach ($documents as $document) {
             try {
-                $filePath = storage_path('app' . DIRECTORY_SEPARATOR . $document->file_path);
+                $filePath = Storage::disk('private')->path($document->file_path);
 
                 // Caminho do ficheiro dentro do ZIP
                 $fileInZip = $folderPath . '/' . $document->name;

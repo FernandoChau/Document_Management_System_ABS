@@ -167,7 +167,7 @@ class ZipBuilder
     private function addDocumentToZip(ZipArchive $zip, Document $document, string $basePath): void
     {
         try {
-            $filePath = storage_path('app/' . $document->file_path);
+            $filePath = Storage::disk('private')->path($document->file_path);
 
             if (file_exists($filePath)) {
                 $zip->addFile($filePath, $basePath . $document->name);

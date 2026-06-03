@@ -103,4 +103,12 @@ class User extends Authenticatable
     {
         return $this->role === 'admin';
     }
+
+    /**
+     * Check if user is image manager
+     */
+    public function isImageManager(): bool
+    {
+        return $this->role === 'image_manager' || $this->isAdmin();
+    }
 }

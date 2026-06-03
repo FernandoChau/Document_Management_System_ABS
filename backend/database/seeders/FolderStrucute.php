@@ -16,65 +16,65 @@ class FolderStrucute extends Seeder
         Folder::create([
             'name' => 'Documentos Corentes',
             'parent_id' => null,
-            'reference_code' => 'doc.corentes',
+            'reference_code' => 'DC',
         ]);
         Folder::create([
             'name' => 'Memorandos ou Acordos',
             'parent_id' => null,
-            'reference_code' => 'memorandos.acordos',
+            'reference_code' => 'MA',
         ]);
         Folder::create([
             'name' => 'Normas e Regulamentos',
             'parent_id' => null,
-            'reference_code' => 'normas.regulamentos',
+            'reference_code' => 'NR',
         ]);
 
         //subpastas de Documentos Corentes
         Folder::create([
             'name' => 'Administrativos',
             'parent_id' => Folder::where('name', 'Documentos Corentes')->first()->id,
-            'reference_code' => 'doc.administrativos',
+            'reference_code' => 'DC.ADM',
         ]);
         Folder::create([
             'name' => 'Contabilidade',
             'parent_id' => Folder::where('name', 'Documentos Corentes')->first()->id,
-            'reference_code' => 'doc.contabilidade',
+            'reference_code' => 'DC.CON',
         ]);
         Folder::create([
             'name' => 'Recursos Humanos',
             'parent_id' => Folder::where('name', 'Documentos Corentes')->first()->id,
-            'reference_code' => 'doc.recursos_humanos',
+            'reference_code' => 'DC.RH',
         ]);
 
         //Subpastas de Administrativos
         Folder::create([
             'name' => 'Cartas',
             'parent_id' => Folder::where('name', 'Administrativos')->first()->id,
-            'reference_code' => 'administrativos.cartas',
+            'reference_code' => 'DC.ADM.C',
         ]);
         Folder::create([
             'name' => 'Relatórios',
             'parent_id' => Folder::where('name', 'Administrativos')->first()->id,
-            'reference_code' => 'administrativos.relatorios',
+            'reference_code' => 'DC.ADM.R',
         ]);
 
         //Subpastas de RH
         Folder::create([
             'name' => 'Contratos',
             'parent_id' => Folder::where('name', 'Recursos Humanos')->first()->id,
-            'reference_code' => 'recursos.contratos',
+            'reference_code' => 'DC.RH.C',
         ]);
 
         //Subpastas de Memorandos ou Acordos
         Folder::create([
             'name' => 'Acordos de Actividades',
             'parent_id' => Folder::where('name', 'Memorandos ou Acordos')->first()->id,
-            'reference_code' => 'memorandos.acordos_actividades',
+            'reference_code' => 'MA.AC',
         ]);
         Folder::create([
             'name' => 'Parcerias',
             'parent_id' => Folder::where('name', 'Memorandos ou Acordos')->first()->id,
-            'reference_code' => 'memorandos.parcerias',
+            'reference_code' => 'MA.PAR',
         ]);
         
     }

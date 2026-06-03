@@ -52,6 +52,18 @@ Route::prefix('/')->group(function () {
             Route::post('/verificar', [TwoFactorAuthenticationController::class, 'verify']);
         });
 
+        // ==================== ALBUMS ====================
+        Route::apiResource('albums', \App\Http\Controllers\AlbumController::class);
+        Route::patch('albums/{album}/cover', [\App\Http\Controllers\AlbumController::class, 'updateCover']);
+
+        // ==================== PHOTOS ====================
+        Route::get('albums/{album}/photos', [\App\Http\Controllers\PhotoController::class, 'index']);
+        Route::post('photos', [\App\Http\Controllers\PhotoController::class, 'store']);
+        Route::delete('photos/{photo}', [\App\Http\Controllers\PhotoController::class, 'destroy']);
+        Route::get('photos/{photo}/download', [\App\Http\Controllers\PhotoController::class, 'download'])->name('photos.download');
+        Route::get('photos/{photo}/thumbnail', [\App\Http\Controllers\PhotoController::class, 'thumbnail'])->name('photos.thumbnail');
+        Route::get('photos/{photo}/medium', [\App\Http\Controllers\PhotoController::class, 'medium'])->name('photos.medium');
+
         // ==================== DEPARTMENTS ====================
         Route::prefix('departamentos')->group(function () {
             Route::get('/', [DepartmentController::class, 'index']);

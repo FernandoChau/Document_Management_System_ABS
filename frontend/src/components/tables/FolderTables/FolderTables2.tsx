@@ -39,6 +39,7 @@ import {
   MagnifyingGlassIcon,
   PaperAirplaneIcon,
   PencilIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { DocumentTextIcon, FolderOpenIcon } from "@heroicons/react/24/solid";
 import { AlertCircleIcon, CheckCircleIcon, DownloadIcon, FolderIcon } from "lucide-react";
@@ -75,6 +76,15 @@ function FolderTables2({ folderId }: FolderTables2Props) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  // ─── Search & Filter State ─────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [filterType, setFilterType] = useState<"all" | "folders" | "documents">("all");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  // ──────────────────────────────────────────────────────────────────────────
+
   const currentFolderId = folderId ?? searchParams.get("folder") ?? undefined;
   const visibleFolders = useMemo(
     () => folders.filter((folder) => Boolean(folder?.id && folder?.name)),
@@ -84,6 +94,68 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     () => documents.filter((document) => Boolean(document?.id && document?.name)),
     [documents],
   );
+
+  // ─── Filtered Lists (search + filter applied) ──────────────────────────────
+  const filteredFolders = useMemo(() => {
+    if (filterType === "documents") return [];
+    let result = visibleFolders;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (f) =>
+          f.name?.toLowerCase().includes(q) ||
+          f.reference_code?.toLowerCase().includes(q),
+      );
+    }
+    if (filterDateFrom) {
+      result = result.filter(
+        (f) => f.created_at && new Date(f.created_at) >= new Date(filterDateFrom),
+      );
+    }
+    if (filterDateTo) {
+      result = result.filter(
+        (f) =>
+          f.created_at &&
+          new Date(f.created_at) <= new Date(filterDateTo + "T23:59:59"),
+      );
+    }
+    return result;
+  }, [visibleFolders, searchQuery, filterType, filterDateFrom, filterDateTo]);
+
+  const filteredDocuments = useMemo(() => {
+    if (filterType === "folders") return [];
+    let result = visibleDocuments;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(
+        (d) =>
+          d.name?.toLowerCase().includes(q) ||
+          d.reference_code?.toLowerCase().includes(q),
+      );
+    }
+    if (filterDateFrom) {
+      result = result.filter(
+        (d) => d.created_at && new Date(d.created_at) >= new Date(filterDateFrom),
+      );
+    }
+    if (filterDateTo) {
+      result = result.filter(
+        (d) =>
+          d.created_at &&
+          new Date(d.created_at) <= new Date(filterDateTo + "T23:59:59"),
+      );
+    }
+    return result;
+  }, [visibleDocuments, searchQuery, filterType, filterDateFrom, filterDateTo]);
+
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (filterType !== "all") count++;
+    if (filterDateFrom) count++;
+    if (filterDateTo) count++;
+    return count;
+  }, [filterType, filterDateFrom, filterDateTo]);
+  // ──────────────────────────────────────────────────────────────────────────
 
   const handleShareItem = (data: Folder | Document, fileType: string) => {
     setItemType(fileType);
@@ -432,7 +504,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     );
   }
 
-  const isEmpty = visibleFolders.length === 0 && visibleDocuments.length === 0;
+  const isEmpty = filteredFolders.length === 0 && filteredDocuments.length === 0;
+  const hasNoResults =
+    isEmpty && (visibleFolders.length > 0 || visibleDocuments.length > 0);
   return (
     <div className=" max-h-[calc(100vh-110px)] overflow-hidden rounded-2xl border border-gray-200 bg-white px-4 pb-3 pt-4 dark:border-gray-800 dark:bg-white/[0.03] sm:px-6">
       <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:items-center sm:justify-between">
@@ -471,13 +545,40 @@ function FolderTables2({ folderId }: FolderTables2Props) {
               Voltar
             </button>
           )}
-          <button className=" w-40 h-10 pl-2.5 flex items-center justify-start gap-2 rounded-full border border-gray-300 bg-white text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
-            <MagnifyingGlassIcon className="size-4.5" />
-            Pesquisar...
-          </button>
-          <button className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200">
+          <div className="relative flex items-center">
+            <MagnifyingGlassIcon className="absolute left-2.5 size-4.5 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Pesquisar..."
+              className="h-10 w-44 rounded-full border border-gray-300 bg-white pl-8 pr-8 text-theme-sm text-gray-700 placeholder-gray-400 shadow-theme-xs transition-all duration-200 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:placeholder-gray-500 dark:focus:ring-brand-600"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-gray-200"
+                title="Limpar pesquisa"
+              >
+                <XMarkIcon className="size-4" />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => setFilterOpen(!filterOpen)}
+            className={`relative inline-flex items-center gap-2 rounded-lg border px-4 py-2.5 text-theme-sm font-medium shadow-theme-xs transition-all duration-200 ${
+              filterOpen || activeFiltersCount > 0
+                ? "border-brand-400 bg-brand-50 text-brand-700 dark:border-brand-600 dark:bg-brand-900/30 dark:text-brand-400"
+                : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+            }`}
+          >
             <AdjustmentsHorizontalIcon className="size-5" />
             Filtro
+            {activeFiltersCount > 0 && (
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-brand-500 text-[10px] font-bold text-white">
+                {activeFiltersCount}
+              </span>
+            )}
           </button>
           <Button
             onClick={handleCreateFolder}
@@ -500,6 +601,85 @@ function FolderTables2({ folderId }: FolderTables2Props) {
         </div>
       </div>
 
+      {/* Filter Panel */}
+      {filterOpen && (
+        <div className="mb-4 flex flex-wrap items-end gap-4 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800/50">
+          {/* Type filter */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Tipo
+            </label>
+            <div className="flex overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+              {(["all", "folders", "documents"] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                    filterType === type
+                      ? "bg-brand-500 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  {type === "all"
+                    ? "Todos"
+                    : type === "folders"
+                      ? "Pastas"
+                      : "Ficheiros"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Date from */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Data de início
+            </label>
+            <input
+              type="date"
+              value={filterDateFrom}
+              onChange={(e) => setFilterDateFrom(e.target.value)}
+              className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            />
+          </div>
+
+          {/* Date to */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              Data de fim
+            </label>
+            <input
+              type="date"
+              value={filterDateTo}
+              onChange={(e) => setFilterDateTo(e.target.value)}
+              className="h-8 rounded-lg border border-gray-200 bg-white px-2 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+            />
+          </div>
+
+          {/* Actions & count */}
+          <div className="flex flex-1 items-end justify-between gap-4">
+            {activeFiltersCount > 0 ? (
+              <button
+                onClick={() => {
+                  setFilterType("all");
+                  setFilterDateFrom("");
+                  setFilterDateTo("");
+                }}
+                className="text-xs font-medium text-red-500 transition-colors hover:text-red-600 hover:underline dark:text-red-400"
+              >
+                Limpar filtros
+              </button>
+            ) : (
+              <span />
+            )}
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {filteredFolders.length + filteredDocuments.length} resultado(s) de{" "}
+              {visibleFolders.length + visibleDocuments.length} item(ns)
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Success Alert */}
       {success && (
         <div className="mb-4 flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-900 dark:bg-green-950">
@@ -508,10 +688,33 @@ function FolderTables2({ folderId }: FolderTables2Props) {
         </div>
       )}
 
-      {isEmpty && (
+      {isEmpty && !hasNoResults && (
         <div className="flex flex-col items-center justify-center gap-3 py-20">
           <FolderIcon className="size-12 text-gray-300" />
           <p className="text-lg text-gray-500">Sem ficheiros ou pastas para mostrar</p>
+        </div>
+      )}
+
+      {isEmpty && hasNoResults && (
+        <div className="flex flex-col items-center justify-center gap-3 py-20">
+          <MagnifyingGlassIcon className="size-12 text-gray-300" />
+          <p className="text-lg text-gray-500">Nenhum resultado encontrado</p>
+          <p className="text-sm text-gray-400">
+            Tente ajustar os filtros ou os termos de pesquisa
+          </p>
+          {(searchQuery || activeFiltersCount > 0) && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setFilterType("all");
+                setFilterDateFrom("");
+                setFilterDateTo("");
+              }}
+              className="mt-1 text-sm font-medium text-brand-500 hover:text-brand-600 hover:underline dark:text-brand-400"
+            >
+              Limpar pesquisa e filtros
+            </button>
+          )}
         </div>
       )}
 
@@ -542,7 +745,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
           </TableHeader>
 
           <TableBody className="divide-y divide-gray-100 dark:divide-gray-800]">
-            {folders.map((folder) => (
+            {filteredFolders.map((folder) => (
               <TableRow
                 key={folder.id}
                 className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30 "
@@ -641,9 +844,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
             ))}
 
             {/* ============= SEÇÃO DE DOCUMENTOS ============= */}
-            {documents.length > 0 && (
+            {filteredDocuments.length > 0 && (
               <>
-                {documents.map((document) => (
+                {filteredDocuments.map((document) => (
                   <TableRow
                     key={document.id}
                     className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30 "

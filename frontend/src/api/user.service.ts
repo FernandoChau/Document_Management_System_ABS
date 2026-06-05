@@ -26,12 +26,27 @@ export type AdminCreateUserDTO = {
 // ✅ Tipo de resposta da listagem (estrutura real do backend)
 export type ListUsersResponse = {
   status: string;
-  users: User[]; // O backend retorna "users", não "data"
+  users: User[];
 };
 
 // ✅ Tipo de resposta para single user (estrutura real do backend)
 export type ShowUserResponse = {
   status: string;
+  user: User;
+};
+
+// ✅ Tipo de resposta para criação de utilizador
+export type CreateUserResponse = {
+  status: string;
+  message: string;
+  user: User;
+  reset_email_status: "sent" | "failed";
+};
+
+// ✅ Tipo de resposta para update/activate/deactivate
+export type MutateUserResponse = {
+  status: string;
+  message: string;
   user: User;
 };
 
@@ -45,17 +60,25 @@ export function showUser(id: string) {
 }
 
 export function createUserByAdmin(payload: AdminCreateUserDTO) {
-  return api.post<User>("/utilizadores", payload);
+  return api.post<CreateUserResponse>("/utilizadores", payload);
 }
 
 export function updateUserByAdmin(id: string, payload: AdminCreateUserDTO) {
-  return api.put<User>(`/utilizadores/${id}`, payload);
+  return api.put<MutateUserResponse>(`/utilizadores/${id}`, payload);
 }
 
 export function activateUser(id: string) {
-  return api.put<User>(`/utilizadores/${id}/ativar`);
+  return api.put<MutateUserResponse>(`/utilizadores/${id}/ativar`);
 }
 
 export function deactivateUser(id: string) {
-  return api.put<User>(`/utilizadores/${id}/desativar`);
+  return api.put<MutateUserResponse>(`/utilizadores/${id}/desativar`);
+}
+
+export function redefineUserPassword(id: string, payload: { password: string; password_confirmation: string }) {
+  return api.put<MutateUserResponse>(`/utilizadores/${id}/redefinir-senha`, payload);
+}
+
+export function getUserLogs(userId: string) {
+  return api.get<any>(`/auditoria/usuario/${userId}/logs`);
 }

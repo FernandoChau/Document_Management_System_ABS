@@ -35,4 +35,9 @@ class AuditLog extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function resource()
+    {
+        return $this->morphTo('resource', 'resource_type', 'resource_id');
+    }
 }

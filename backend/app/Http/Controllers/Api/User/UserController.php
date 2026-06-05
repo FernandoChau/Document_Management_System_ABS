@@ -193,6 +193,37 @@ class UserController extends Controller
         ], 200, ['Content-Type' => 'application/json']);
     }
 
+    public function redefinePassword(Request $request, string $id)
+    {
+        $this->ensureAdmin($request);
+
+        $user = User::find($id);
+        if (!$user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Utilizador não encontrado.',
+            ], 404, ['Content-Type' => 'application/json']);
+        }
+
+        $request->validate([
+            'password' => 'required|string|min:6|confirmed',
+        ], [
+            'password.required' => 'A password é obrigatória.',
+            'password.min' => 'A password deve ter pelo menos 6 caracteres.',
+            'password.confirmed' => 'As passwords não coincidem.',
+        ]);
+
+        $user->password = bcrypt($request->password);
+        $user->has_authenticated = true;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Password redefinida com sucesso para o utilizador ' . $user->name,
+            'user' => $user,
+        ], 200, ['Content-Type' => 'application/json']);
+    }
+
     private function ensureAdmin(Request $request): void
     {
         $currentUser = $request->user();

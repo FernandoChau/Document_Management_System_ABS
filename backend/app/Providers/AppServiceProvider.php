@@ -37,5 +37,20 @@ class AppServiceProvider extends ServiceProvider
         // Register observers for slug synchronization
         Folder::observe(FolderObserver::class);
         Department::observe(DepartmentObserver::class);
+
+        // Register polymorphic relations mapping for AuditLog
+        \Illuminate\Database\Eloquent\Relations\Relation::morphMap([
+            'Document' => \App\Models\Document::class,
+            'Folder' => \App\Models\Folder::class,
+            'Department' => \App\Models\Department::class,
+            'Group' => \App\Models\Group::class,
+            'DocumentPermission' => \App\Models\DocumentPermission::class,
+            'FolderPermission' => \App\Models\FolderPermission::class,
+            'DocumentContent' => \App\Models\DocumentContent::class,
+            'User' => \App\Models\User::class,
+            'ShareLink' => \App\Models\ShareLink::class,
+            'Album' => \App\Models\Album::class,
+            'Photo' => \App\Models\Photo::class,
+        ]);
     }
 }

@@ -173,7 +173,7 @@ class AuditLogController extends Controller
         }
 
         $perPage = $request->input('per_page', 15);
-        $logs = $query->with('user')
+        $logs = $query->with(['user', 'resource'])
             ->latest('created_at')
             ->paginate($perPage);
 

@@ -5,6 +5,7 @@ import {
   createUserByAdmin,
   deactivateUser,
   listUsers,
+  redefineUserPassword,
   showUser,
   User,
 } from "../../../api/user.service";
@@ -48,10 +49,11 @@ import Select from "@/components/form/Select";
 import SelectInputs from "@/components/form/form-elements/SelectInputs";
 import Checkbox from "@/components/form/input/Checkbox";
 import CreateUserModal from "@/components/modals/usersModal/CreateUserModal";
-import { preventDefault } from "@fullcalendar/core/internal";
+
 import DeactivateUserModal from "@/components/modals/usersModal/DeactivateUserModal";
 import ActiveUserModal from "@/components/modals/usersModal/ActiveUserModal";
 import ResetUserPassword from "@/components/modals/usersModal/ResetUserPassword";
+import UserLogsModal from "@/components/modals/usersModal/UserLogsModal";
 
 function UserTable() {
   const [activeModal, setActiveModal] = useState<
@@ -115,37 +117,24 @@ function UserTable() {
     role: string,
     phone?: string,
     profession?: string,
-  ) => {
-    //fetch or axios call to store user
-    console.log("Criar usuário com dados:", {
+  ): Promise<void> => {
+    const newUser: AdminCreateUserDTO = {
       name,
       email,
-      isActive,
-      role,
+      is_active: isActive,
+      role: role as "admin" | "user",
       phone,
       profession,
-    });
+    };
 
-    try {
-      const newUser: AdminCreateUserDTO = {
-        name: name,
-        email: email,
-        is_active: isActive,
-        role: role as "admin" | "user",
-        phone: phone,
-        profession: profession,
-      };
-      // console.log("Objeto pronto para envio:", newUser);
+    // Deixa o erro propagar para o modal tratar (feedback de validação)
+    const response = await createUserByAdmin(newUser);
+    console.log("Resposta da criação:", response);
 
-      // Store new user logic (call api to save)
-      const response = await createUserByAdmin(newUser);
-      console.log("Resposta da criação:", response);
-
-      // Atualizar lista localmente ou refetch
-      setUsers((prev) => [...prev, response.data]);
-      setActiveModal(null);
-      closeDropdown();
-    } catch (error) {}
+    // O backend retorna { status, message, user } — aceder a .user
+    const createdUser = response.data.user;
+    setUsers((prev) => [...prev, createdUser]);
+    setActiveModal(null);
   };
 
   const handleView = async (userId?: string) => {
@@ -156,6 +145,7 @@ function UserTable() {
     try {
       const response = await showUser(userId);
       setSelectedUser(response.data.user);
+      setActiveModal("view");
     } catch (error) {
       console.error("Erro ao carregar utilizador:", error);
     }
@@ -186,10 +176,14 @@ function UserTable() {
       const response = await activateUser(userId);
       console.log("Resposta da ativacao:", response);
 
+      // O backend retorna { status, message, user } — aceder a .user
+      const updatedUser = response.data.user;
       setUsers((prev) =>
-        prev.map((user) => (user.id === userId ? response.data : user)),
+        prev.map((user) => (user.id === userId ? updatedUser : user)),
       );
-    } catch (error) {}
+    } catch (error) {
+      console.error("Erro ao ativar utilizador:", error);
+    }
 
     setActiveModal(null);
   };
@@ -209,11 +203,14 @@ function UserTable() {
       const response = await deactivateUser(userId);
       console.log("Resposta da desativacao:", response);
 
-      //replace all users with the updated user
+      // O backend retorna { status, message, user } — aceder a .user
+      const updatedUser = response.data.user;
       setUsers((prev) =>
-        prev.map((user) => (user.id === userId ? response.data : user)),
+        prev.map((user) => (user.id === userId ? updatedUser : user)),
       );
-    } catch (error) {}
+    } catch (error) {
+      console.error("Erro ao desativar utilizador:", error);
+    }
 
     setActiveModal(null);
   };
@@ -226,7 +223,18 @@ function UserTable() {
     setActiveModal("resetPassword");
     closeDropdown();
   };
-  const reseteUserPassword = (userId: string) => {};
+  const reseteUserPassword = async (userId: string, password: string) => {
+    try {
+      const response = await redefineUserPassword(userId, {
+        password: password,
+        password_confirmation: password,
+      });
+      console.log("Resposta da redefinicao de senha:", response);
+    } catch (error) {
+      console.error("Erro ao redefinir password:", error);
+      throw error;
+    }
+  };
 
   const openDeleteUserModal = (userId?: string) => {
     if (!userId) {
@@ -273,26 +281,6 @@ function UserTable() {
           >
             Tentar Novamente
           </button>
-        </div>
-      </div>
-    );
-  }
-  if (users.length === 0) {
-    console.log(
-      "⚠️ Nenhum utilizador encontrado. users=",
-      users,
-      "loading=",
-      loading,
-      "error=",
-      error,
-    );
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <UserIcon className="w-12 h-12 text-gray-400 mx-auto" />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
-            Nenhum utilizador encontrado
-          </p>
         </div>
       </div>
     );
@@ -370,6 +358,18 @@ function UserTable() {
           </TableHeader>
 
           <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+            {users.length === 0 ? (
+              <TableRow>
+                <TableCell className="py-16 text-center" colSpan={6}>
+                  <div className="flex flex-col items-center gap-2">
+                    <UserIcon className="w-10 h-10 text-gray-300 dark:text-gray-600" />
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Nenhum utilizador encontrado
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : null}
             {users.map((user) => (
               <TableRow
                 key={user.id}
@@ -505,14 +505,18 @@ function UserTable() {
         userData={[selectedUser?.id || "", selectedUser?.name || ""]}
       />
 
-      <ResetUserPassword
+       <ResetUserPassword
         isOpen={activeModal === "resetPassword"}
         onClose={() => setActiveModal(null)}
-        onSubmit={(id) => {
-          console.log("Reset password para utilizador:", id);
-          setActiveModal(null);
-        }}
+        onSubmit={reseteUserPassword}
         userData={[selectedUser?.id || "", selectedUser?.name || ""]}
+      />
+
+      <UserLogsModal
+        isOpen={activeModal === "view"}
+        onClose={() => setActiveModal(null)}
+        userId={selectedUser?.id || ""}
+        userName={selectedUser?.name || ""}
       />
     </div>
   );

@@ -173,6 +173,7 @@ Route::prefix('/')->group(function () {
             Route::put('/{id}', [UserController::class, 'update']);                 //checked
             Route::put('/{id}/desativar', [UserController::class, 'deactivate']);   //checked
             Route::put('/{id}/ativar', [UserController::class, 'activate']);        //checked
+            Route::put('/{id}/redefinir-senha', [UserController::class, 'redefinePassword']);
         });
 
         // ==================== GROUPS ====================

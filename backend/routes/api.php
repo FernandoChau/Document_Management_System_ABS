@@ -161,6 +161,8 @@ Route::prefix('/')->group(function () {
         // ==================== DASHBOARD & REPORTS ====================
         Route::prefix('dashboard')->group(function () {
             Route::get('/', [DashboardController::class, 'index']);
+            Route::get('/admin', [DashboardController::class, 'admin']);
+            Route::get('/user', [DashboardController::class, 'user']);
             Route::get('/departamento/{department}', [DashboardController::class, 'department']);
             Route::get('/pasta/{folder}', [DashboardController::class, 'folder']);
         });

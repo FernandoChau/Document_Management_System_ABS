@@ -7,6 +7,10 @@ use App\Models\Document;
 use App\Models\Folder;
 use App\Models\Department;
 use App\Models\AuditLog;
+use App\Models\User;
+use App\Models\Album;
+use App\Models\Photo;
+use App\Models\FolderPermission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -40,6 +44,97 @@ class DashboardController extends Controller
             'documents_by_department' => $this->documentsByDepartment(),
             'top_users' => $this->topUsers(10, $dateFrom, $dateTo),
             'storage_usage' => $this->storageUsage(),
+        ];
+
+        return response()->json($stats);
+    }
+
+    /**
+     * Dashboard for Admin
+     */
+    public function admin(Request $request)
+    {
+        $dateFrom = \Carbon\Carbon::now()->startOfMonth();
+        $dateTo = \Carbon\Carbon::now();
+
+        $totalSizeDocs = (float) Document::sum('size');
+        $totalSizeImages = (float) Photo::sum('size');
+
+        $period = $request->query('period', 'month');
+        switch ($period) {
+            case 'quarter':
+                $topUsersDateFrom = \Carbon\Carbon::now()->subMonths(3);
+                break;
+            case 'semester':
+                $topUsersDateFrom = \Carbon\Carbon::now()->subMonths(6);
+                break;
+            case 'year':
+                $topUsersDateFrom = \Carbon\Carbon::now()->subYear();
+                break;
+            case 'month':
+            default:
+                $topUsersDateFrom = \Carbon\Carbon::now()->subMonth();
+                break;
+        }
+
+        $stats = [
+            'summary' => [
+                'total_documents' => Document::count(),
+                'total_folders' => Folder::count(),
+                'total_images' => Photo::count(),
+                'total_albums' => Album::count(),
+                'total_users' => User::count(),
+                'documents_this_month' => Document::whereBetween('created_at', [$dateFrom, $dateTo])->count(),
+                'total_size_documents' => $totalSizeDocs,
+                'total_size_images' => $totalSizeImages,
+                'total_size_general' => $totalSizeDocs + $totalSizeImages,
+            ],
+            'evolution_chart' => $this->uploadsByDate(\Carbon\Carbon::now()->subMonths(6), \Carbon\Carbon::now()),
+            'distribution_chart' => $this->documentsByType(),
+            'department_chart' => $this->documentsByDepartment(),
+            'recent_activities' => $this->recentUploads(5),
+            'top_users' => $this->topUsers(5, $topUsersDateFrom, \Carbon\Carbon::now()),
+        ];
+
+        return response()->json($stats);
+    }
+
+    /**
+     * Dashboard for User
+     */
+    public function user(Request $request)
+    {
+        $user = $request->user();
+
+        $userSizeDocs = (float) Document::where('user_id', $user->id)->sum('size');
+        $userSizeImages = (float) Photo::where('uploaded_by', $user->id)->sum('size');
+
+        $stats = [
+            'summary' => [
+                'my_documents' => Document::where('user_id', $user->id)->count(),
+                'my_images' => Photo::where('user_id', $user->id)->count(),
+                'my_albums' => Album::where('user_id', $user->id)->count(),
+                'my_folders' => FolderPermission::where('user_id', $user->id)->distinct('folder_id')->count('folder_id'),
+                'total_size_documents' => $userSizeDocs,
+                'total_size_images' => $userSizeImages,
+                'total_size_general' => $userSizeDocs + $userSizeImages,
+            ],
+            'evolution_chart' => Document::where('user_id', $user->id)
+                ->where('created_at', '>=', \Carbon\Carbon::now()->subMonths(6))
+                ->selectRaw('DATE(created_at) as date, count(*) as count')
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get(),
+            'distribution_chart' => Document::where('user_id', $user->id)
+                ->selectRaw('mime_type, count(*) as count, sum(size) as total_size')
+                ->groupBy('mime_type')
+                ->orderByDesc('count')
+                ->get(),
+            'recent_activities' => Document::with('folder', 'uploader')
+                ->where('user_id', $user->id)
+                ->latest('created_at')
+                ->limit(5)
+                ->get(['id', 'name', 'size', 'mime_type', 'created_at', 'folder_id', 'user_id']),
         ];
 
         return response()->json($stats);

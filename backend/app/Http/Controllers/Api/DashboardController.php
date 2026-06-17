@@ -112,8 +112,8 @@ class DashboardController extends Controller
         $stats = [
             'summary' => [
                 'my_documents' => Document::where('user_id', $user->id)->count(),
-                'my_images' => Photo::where('user_id', $user->id)->count(),
-                'my_albums' => Album::where('user_id', $user->id)->count(),
+                'my_images' => Photo::where('uploaded_by', $user->id)->count(),
+                'my_albums' => Album::where('created_by', $user->id)->count(),
                 'my_folders' => FolderPermission::where('user_id', $user->id)->distinct('folder_id')->count('folder_id'),
                 'total_size_documents' => $userSizeDocs,
                 'total_size_images' => $userSizeImages,

@@ -18,6 +18,7 @@ import Button from "@/components/ui/button/Button";
 import { Dropdown } from "@/components/ui/dropdown/Dropdown";
 import { DropdownItem } from "@/components/ui/dropdown/DropdownItem";
 import { FileUploadModal } from "@/components/ui/fileModal/FileUploadModal";
+import { useUpload } from "@/context/UploadContext";
 import CreateFolderModal from "@/components/ui/folderModa/CreateFolderModal";
 import EditFolderModal from "@/components/ui/folderModa/EditFolderModal";
 import {
@@ -43,7 +44,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { DocumentTextIcon, FolderOpenIcon } from "@heroicons/react/24/solid";
 import { AlertCircleIcon, CheckCircleIcon, DownloadIcon, FolderIcon } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useSearchParams } from "react-router";
 import { useAuth } from "@/context/AuthContext";
 
@@ -56,6 +57,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const [searchParams, setSearchParams] = useSearchParams();
+  const { queue } = useUpload();
 
   const [activeFolderModal, setActiveFolderModal] = useState<"create" | "edit" | null>(null);
   const [activeFileModal, setActiveFileModal] = useState<"create" | "edit" | null>(null);
@@ -349,9 +351,11 @@ function FolderTables2({ folderId }: FolderTables2Props) {
   }
 
   // Função reutilizável para recarregar pastas
-  const refreshFolders = async () => {
+  const refreshFolders = async (isBackground = false) => {
     try {
-      setLoading(true);
+      if (!isBackground) {
+        setLoading(true);
+      }
       setError(null);
 
       const data = await getFolderContents(currentFolderId);
@@ -378,13 +382,32 @@ function FolderTables2({ folderId }: FolderTables2Props) {
           : "Falha ao carregar ficheiros. Tente novamente.";
       setError(errorMsg);
     } finally {
-      setLoading(false);
+      if (!isBackground) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     refreshFolders();
   }, [currentFolderId]);
+
+  const completedCount = queue.filter(
+    (item) => item.status === "completed" && item.folderId === currentFolderId
+  ).length;
+
+  const lastRefreshedCompletedRef = useRef<Record<string, number>>({});
+
+  useEffect(() => {
+    const folderKey = currentFolderId || "root";
+    const currentCompleted = completedCount;
+    const lastCompleted = lastRefreshedCompletedRef.current[folderKey] || 0;
+
+    if (currentCompleted > lastCompleted) {
+      lastRefreshedCompletedRef.current[folderKey] = currentCompleted;
+      refreshFolders(true);
+    }
+  }, [completedCount, currentFolderId]);
 
   const handleCreateFile = () => {
     setActiveFileModal("create");

@@ -338,6 +338,7 @@ export const uploadDocument = async (
   folderId: string | undefined,
   files: File | File[],
   onProgress?: UploadProgressCallback,
+  signal?: AbortSignal,
 ): Promise<{ message: string; documents: Document[] }> => {
   const fileArray = Array.isArray(files) ? files : [files];
   const formData = new FormData();
@@ -353,6 +354,16 @@ export const uploadDocument = async (
 
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+
+    if (signal) {
+      if (signal.aborted) {
+        reject(new Error("Upload cancelled"));
+        return;
+      }
+      signal.addEventListener("abort", () => {
+        xhr.abort();
+      });
+    }
 
     // Track upload progress
     if (onProgress) {
@@ -409,6 +420,7 @@ export const uploadDocument = async (
       reject(new Error("Network error during upload"));
     });
 
+    // Handle aborts
     xhr.addEventListener("abort", () => {
       reject(new Error("Upload cancelled"));
     });

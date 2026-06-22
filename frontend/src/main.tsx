@@ -7,15 +7,19 @@ import App from "./App.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
 import { AuthProvider } from "./context/AuthContext.tsx";
+import { UploadProvider } from "./context/UploadContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <AppWrapper>
-          <App />
-        </AppWrapper>
+        <UploadProvider>
+          <AppWrapper>
+            <App />
+          </AppWrapper>
+        </UploadProvider>
       </AuthProvider>
     </ThemeProvider>
   </StrictMode>,
 );
+

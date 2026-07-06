@@ -13,6 +13,33 @@ class ProfileController extends Controller
         return response()->json($request->user());
     }
 
+    // Atualiza informações pessoais do usuário autenticado
+    public function update(Request $request)
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|digits:9|unique:users,phone,' . $user->id,
+        ], [
+            'name.required' => 'O nome é obrigatório.',
+            'name.string' => 'O nome deve ser um texto válido.',
+            'name.max' => 'O nome não pode ter mais de 255 caracteres.',
+            'phone.digits' => 'O número de telefone deve conter exatamente 9 dígitos.',
+            'phone.unique' => 'Este número de telefone já está registado.',
+        ]);
+
+        $user->name = $request->name;
+        $user->phone = $request->phone;
+        $user->save();
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Informações pessoais atualizadas com sucesso.',
+            'user' => $user,
+        ]);
+    }
+
     // Atualiza senha do usuário autenticado
     public function updatePassword(Request $request)
     {

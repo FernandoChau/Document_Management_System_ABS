@@ -30,6 +30,7 @@ Route::get('/user', function (Request $request) {
 Route::prefix('/')->group(function () {
     Route::post('/registar', [RegisterController::class, 'register']);      //checked
     Route::post('/entrar', [LoginController::class, 'login']);              //checked
+    Route::post('/entrar/verificar-2fa', [LoginController::class, 'verifyTwoFactor']); //2FA login step
     Route::post('/recuperar-senha', [PasswordController::class, 'forgot']); //checked
     Route::post('/redefinir-senha', [PasswordController::class, 'reset']);  //checked
 
@@ -40,6 +41,7 @@ Route::prefix('/')->group(function () {
     Route::middleware(['auth:sanctum', 'check.auth.status'])->group(function () {
         Route::post('/sair', [LogoutController::class, 'logout']);                                  //checked
         Route::get('/minha-conta', [ProfileController::class, 'me']);                               //checked
+        Route::put('/minha-conta', [ProfileController::class, 'update']);
         Route::post('/atualizar-senha', [ProfileController::class, 'updatePassword']);              //checked    
 
         // Two-Factor Authentication

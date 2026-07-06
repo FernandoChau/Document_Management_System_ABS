@@ -9,11 +9,13 @@ import {
 } from "react";
 import {
   type AuthUser,
+  type LoginTwoFactorResponse,
   type RegisterDTO,
   getMyAccount,
   loginUser,
   logoutUser,
   registerUser,
+  verifyTwoFactorLogin,
 } from "../api/auth.service";
 import { setUnauthorizedHandler } from "../api/axios";
 
@@ -21,7 +23,8 @@ type AuthContextType = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isBootstrapping: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<LoginTwoFactorResponse | null>;
+  loginComplete: (twoFactorToken: string, code: string) => Promise<void>;
   register: (payload: RegisterDTO) => Promise<void>;
   logout: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -51,10 +54,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(data);
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string): Promise<LoginTwoFactorResponse | null> => {
     const { data } = await loginUser({ email, password });
-    // Token é automaticamente salvo em cookie HttpOnly pelo backend
-    // Não precisamos fazer nada, apenas atualizar o estado do usuário
+    // Se o backend exige 2FA, retorna o token temporário ao chamador
+    if ("requires_two_factor" in data && data.requires_two_factor) {
+      return data as LoginTwoFactorResponse;
+    }
+    // Login completo sem 2FA: define o utilizador na sessão
+    if ("user" in data) {
+      setUser(data.user);
+    }
+    return null;
+  }, []);
+
+  const loginComplete = useCallback(async (twoFactorToken: string, code: string): Promise<void> => {
+    const { data } = await verifyTwoFactorLogin({ two_factor_token: twoFactorToken, code });
+    // Token emitido pelo backend via cookie HttpOnly: apenas guarda o utilizador
     setUser(data.user);
   }, []);
 
@@ -102,11 +117,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: !!user,
       isBootstrapping,
       login,
+      loginComplete,
       register,
       logout,
       refreshProfile,
     }),
-    [isBootstrapping, login, logout, refreshProfile, register, user],
+    [isBootstrapping, login, loginComplete, logout, refreshProfile, register, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

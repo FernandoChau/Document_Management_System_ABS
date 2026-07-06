@@ -37,6 +37,51 @@ export function FileUploadModal({
   // Filter queue items related to the current folder context
   const currentFolderQueue = queue.filter((item) => item.folderId === folderId);
 
+  const [previews, setPreviews] = useState<{ [key: string]: string }>({});
+  const previewsRef = useRef<{ [key: string]: string }>({});
+
+  // Sync ref with previews state
+  useEffect(() => {
+    previewsRef.current = previews;
+  }, [previews]);
+
+  // Clean up all preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(previewsRef.current).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
+
+  // Sync previews state with currentFolderQueue changes
+  useEffect(() => {
+    setPreviews((prev) => {
+      const currentIds = new Set(currentFolderQueue.map((item) => item.id));
+      const next = { ...prev };
+      let changed = false;
+
+      // Revoke and delete preview URLs for items no longer in the queue
+      Object.keys(prev).forEach((id) => {
+        if (!currentIds.has(id)) {
+          URL.revokeObjectURL(prev[id]);
+          delete next[id];
+          changed = true;
+        }
+      });
+
+      // Create preview URLs for new image items
+      currentFolderQueue.forEach((item) => {
+        if (item.file.type.startsWith("image/") && !next[item.id]) {
+          next[item.id] = URL.createObjectURL(item.file);
+          changed = true;
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [currentFolderQueue]);
+
   const idleCount = currentFolderQueue.filter((item) => item.status === "idle").length;
   const waitingCount = currentFolderQueue.filter((item) => item.status === "waiting").length;
   const uploadingCount = currentFolderQueue.filter((item) => item.status === "uploading").length;
@@ -210,7 +255,7 @@ export function FileUploadModal({
                           <div className="w-16 h-12 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden">
                             {isImage ? (
                               <img
-                                src={URL.createObjectURL(file)}
+                                src={previews[item.id]}
                                 alt={file.name}
                                 className="w-full h-full object-cover rounded-md"
                               />

@@ -28,7 +28,10 @@ class TwoFactorAuthenticationController extends Controller
 
         // Gera novo secret e recovery codes
         $secret = $provider->generateSecretKey();
-        $recoveryCodes = $provider->generateRecoveryCodes();
+        $recoveryCodes = [];
+        for ($i = 0; $i < 8; $i++) {
+            $recoveryCodes[] = \Laravel\Fortify\RecoveryCode::generate();
+        }
 
         $user->forceFill([
             'two_factor_secret' => encrypt($secret),
@@ -159,7 +162,10 @@ class TwoFactorAuthenticationController extends Controller
         }
 
         $provider = app(TwoFactorAuthenticationProvider::class);
-        $recoveryCodes = $provider->generateRecoveryCodes();
+        $recoveryCodes = [];
+        for ($i = 0; $i < 8; $i++) {
+            $recoveryCodes[] = \Laravel\Fortify\RecoveryCode::generate();
+        }
 
         $user->forceFill([
             'two_factor_recovery_codes' => $this->encodeRecoveryCodes($recoveryCodes),

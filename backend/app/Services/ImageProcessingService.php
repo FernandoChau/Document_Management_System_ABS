@@ -25,16 +25,45 @@ class ImageProcessingService
             // Read original image
             $imageContent = Storage::disk('local')->get($originalPath);
 
-            // Create thumbnail (same content, same file)
             $thumbExt = pathinfo($photo->generated_filename, PATHINFO_EXTENSION);
             $thumbFilename = pathinfo($photo->generated_filename, PATHINFO_FILENAME) . '_thumb.' . $thumbExt;
             $thumbPath = 'images/thumbnails/' . $photo->album_id . '/' . $thumbFilename;
-            Storage::disk('local')->put($thumbPath, $imageContent);
 
-            // Create medium (same content, same file)
             $mediumFilename = pathinfo($photo->generated_filename, PATHINFO_FILENAME) . '_medium.' . $thumbExt;
             $mediumPath = 'images/medium/' . $photo->album_id . '/' . $mediumFilename;
-            Storage::disk('local')->put($mediumPath, $imageContent);
+
+            $processed = false;
+
+            if (extension_loaded('gd')) {
+                try {
+                    $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+                    $image = $manager->decode($imageContent);
+
+                    // Create thumbnail (300px width, scaleDown)
+                    $thumbnailImage = clone $image;
+                    $thumbnailImage->scaleDown(width: 300);
+                    $thumbEncoded = $thumbnailImage->encodeUsingFileExtension($thumbExt, quality: 75);
+                    Storage::disk('local')->put($thumbPath, (string) $thumbEncoded);
+
+                    // Create medium (1000px width, scaleDown)
+                    $mediumImage = clone $image;
+                    $mediumImage->scaleDown(width: 1000);
+                    $mediumEncoded = $mediumImage->encodeUsingFileExtension($thumbExt, quality: 80);
+                    Storage::disk('local')->put($mediumPath, (string) $mediumEncoded);
+
+                    $processed = true;
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning("Failed to resize image using GD (falling back to copying): " . $e->getMessage());
+                }
+            }
+
+            if (!$processed) {
+                // Create thumbnail (fallback: same content, same file)
+                Storage::disk('local')->put($thumbPath, $imageContent);
+
+                // Create medium (fallback: same content, same file)
+                Storage::disk('local')->put($mediumPath, $imageContent);
+            }
 
             // Update album cover if it doesn't have one
             $album = $photo->album;

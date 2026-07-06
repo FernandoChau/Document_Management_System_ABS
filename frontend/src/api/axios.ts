@@ -8,6 +8,7 @@ import axios from "axios";
 
 const PUBLIC_AUTH_ENDPOINTS = [
   "/entrar",
+  "/entrar/verificar-2fa",
   "/registar",
   "/recuperar-senha",
   "/redefinir-senha",

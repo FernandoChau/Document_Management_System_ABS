@@ -79,6 +79,7 @@ export function redefineUserPassword(id: string, payload: { password: string; pa
   return api.put<MutateUserResponse>(`/utilizadores/${id}/redefinir-senha`, payload);
 }
 
-export function getUserLogs(userId: string) {
-  return api.get<any>(`/auditoria/usuario/${userId}/logs`);
+export function getUserLogs(userId: string, page?: number) {
+  const params = page ? `?page=${page}` : "";
+  return api.get<any>(`/auditoria/usuario/${userId}/logs${params}`);
 }

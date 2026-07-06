@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Upload, Trash2, AlertCircle as AlertCircleIcon, CheckCircle, XCircle } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
@@ -43,6 +43,23 @@ export function FileUploadModal({
 }: FileUploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedFiles, setUploadedFiles] = useState<FileValidation[]>([]);
+  const [previews, setPreviews] = useState<{ [key: string]: string }>({});
+
+  const previewsRef = useRef<{ [key: string]: string }>({});
+
+  // Sync ref with previews state
+  useEffect(() => {
+    previewsRef.current = previews;
+  }, [previews]);
+
+  // Clean up all preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(previewsRef.current).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
 
   // Estados de upload
   const [isUploading, setIsUploading] = useState(false);
@@ -96,6 +113,15 @@ export function FileUploadModal({
       return;
     }
 
+    // Generate object URLs for new valid files that are images
+    const newPreviews = validatedFiles.reduce((acc, f) => {
+      if (f.isValid && f.file.type.startsWith("image/")) {
+        acc[f.file.name] = URL.createObjectURL(f.file);
+      }
+      return acc;
+    }, {} as { [key: string]: string });
+    setPreviews(prev => ({ ...prev, ...newPreviews }));
+
     setUploadedFiles((prev) => [...prev, ...validatedFiles]);
   };
 
@@ -113,6 +139,15 @@ export function FileUploadModal({
   };
 
   const removeFile = (filename: string) => {
+    const url = previews[filename];
+    if (url) {
+      URL.revokeObjectURL(url);
+    }
+    setPreviews((prev) => {
+      const next = { ...prev };
+      delete next[filename];
+      return next;
+    });
     setUploadedFiles((prev) => prev.filter((f) => f.file.name !== filename));
   };
 
@@ -121,6 +156,10 @@ export function FileUploadModal({
     if (isUploading) {
       return;
     }
+
+    // Revoke all previews
+    Object.values(previews).forEach((url) => URL.revokeObjectURL(url));
+    setPreviews({});
 
     setUploadedFiles([]);
     setUploadError(null);
@@ -162,6 +201,10 @@ export function FileUploadModal({
 
         // Aguardar um pouco antes de fechar para mostrar 100%
         setTimeout(() => {
+          // Revoke all previews
+          Object.values(previews).forEach((url) => URL.revokeObjectURL(url));
+          setPreviews({});
+
           setUploadedFiles([]);
           setUploadProgress(0);
           setUploadedBytes(0);
@@ -295,7 +338,7 @@ export function FileUploadModal({
                           <div className="w-16 h-12 bg-gray-100 dark:bg-gray-800 rounded-md flex items-center justify-center flex-shrink-0">
                             {file.type.startsWith("image/") ? (
                               <img
-                                src={URL.createObjectURL(file)}
+                                src={previews[file.name]}
                                 alt={file.name}
                                 className="w-full h-full object-cover rounded-md"
                               />

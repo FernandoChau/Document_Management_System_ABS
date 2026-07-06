@@ -91,7 +91,9 @@ class PhotoController extends BaseController
         if (!Storage::disk('local')->exists($path)) {
             abort(404);
         }
-        return Storage::disk('local')->response($path);
+        return response()->file(Storage::disk('local')->path($path), [
+            'Cache-Control' => 'public, max-age=31536000, immutable',
+        ]);
     }
 
     public function medium(Photo $photo)
@@ -103,6 +105,8 @@ class PhotoController extends BaseController
         if (!Storage::disk('local')->exists($path)) {
             abort(404);
         }
-        return Storage::disk('local')->response($path);
+        return response()->file(Storage::disk('local')->path($path), [
+            'Cache-Control' => 'public, max-age=31536000, immutable',
+        ]);
     }
 }

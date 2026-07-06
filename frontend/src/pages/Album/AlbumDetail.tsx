@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router";
 import { useInView } from "react-intersection-observer";
 import { getAlbum } from "@/api/album.service";
@@ -27,14 +27,7 @@ export default function AlbumDetail() {
 
   const { ref, inView } = useInView({ threshold: 0.5 });
 
-  useEffect(() => {
-    if (id) {
-      getAlbum(id).then(res => setAlbum(res.data)).catch(console.error);
-      fetchPhotos();
-    }
-  }, [id]);
-
-  const fetchPhotos = async (cursor?: string) => {
+  const fetchPhotos = useCallback(async (cursor?: string) => {
     if (loading || (!cursor && photos.length > 0) || !id) return;
     setLoading(true);
     try {
@@ -46,19 +39,26 @@ export default function AlbumDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, loading, photos.length]);
+
+  useEffect(() => {
+    if (id) {
+      getAlbum(id).then(res => setAlbum(res.data)).catch(console.error);
+      fetchPhotos();
+    }
+  }, [id, fetchPhotos]);
 
   useEffect(() => {
     if (inView && nextCursor) {
       fetchPhotos(nextCursor);
     }
-  }, [inView, nextCursor]);
+  }, [inView, nextCursor, fetchPhotos]);
 
-  const handleUploadSuccess = (newPhoto: any) => {
+  const handleUploadSuccess = useCallback((newPhoto: any) => {
     setPhotos(prev => [newPhoto, ...prev]);
-  };
+  }, []);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     try {
       for (const photoId of selectedPhotos) {
         await deletePhoto(photoId);
@@ -70,9 +70,33 @@ export default function AlbumDetail() {
     } catch (error) {
       console.error("Failed to delete photos", error);
     }
-  };
+  }, [selectedPhotos]);
 
-  if (!album) return <div className="p-6">A carregar...</div>;
+  if (!album) {
+    return (
+      <div className="p-6 animate-pulse">
+        {/* Breadcrumb & Header Skeleton */}
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-32 mb-2"></div>
+            <div className="h-8 bg-gray-200 dark:bg-gray-800 rounded w-64"></div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-96 mt-2"></div>
+          </div>
+          <div className="flex gap-3">
+            <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded w-24"></div>
+            <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded w-32"></div>
+          </div>
+        </div>
+
+        {/* Gallery Grid Skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="aspect-square bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -123,60 +147,67 @@ export default function AlbumDetail() {
 
       {/* Gallery Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-        {photos.map((photo, index) => {
-          const isSelected = selectedPhotos.includes(photo.id);
-          return (
-            <div
-              key={photo.id}
-              className={`group relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer shadow-sm hover:shadow-md transition-all duration-200 ${isSelected ? 'ring-4 ring-brand-500 scale-95' : ''}`}
-              onClick={() => {
-                if (selectionMode) {
-                  if (isSelected) {
-                    setSelectedPhotos(prev => prev.filter(id => id !== photo.id));
+        {loading && photos.length === 0 ? (
+          Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="animate-pulse aspect-square bg-gray-200 dark:bg-gray-800 rounded-xl"></div>
+          ))
+        ) : (
+          photos.map((photo, index) => {
+            const isSelected = selectedPhotos.includes(photo.id);
+            return (
+              <div
+                key={photo.id}
+                className={`group relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 cursor-pointer shadow-sm hover:shadow-md transition-all duration-200 ${isSelected ? 'ring-4 ring-brand-500 scale-95' : ''}`}
+                onClick={() => {
+                  if (selectionMode) {
+                    if (isSelected) {
+                      setSelectedPhotos(prev => prev.filter(id => id !== photo.id));
+                    } else {
+                      setSelectedPhotos(prev => [...prev, photo.id]);
+                    }
                   } else {
-                    setSelectedPhotos(prev => [...prev, photo.id]);
+                    setLightboxIndex(index);
                   }
-                } else {
-                  setLightboxIndex(index);
-                }
-              }}
-            >
-              {photo.status === 'processing' ? (
-                <div className="flex flex-col items-center justify-center w-full h-full text-brand-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500 mb-2"></div>
-                  <span className="text-xs font-medium">A processar...</span>
-                </div>
-              ) : (
-                <img
-                  src={photo.urls.thumbnail}
-                  alt={photo.original_filename}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                  loading="lazy"
-                />
-              )}
+                }}
+              >
+                {photo.status === 'processing' ? (
+                  <div className="flex flex-col items-center justify-center w-full h-full text-brand-500">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500 mb-2"></div>
+                    <span className="text-xs font-medium">A processar...</span>
+                  </div>
+                ) : (
+                  <img
+                    src={photo.urls.thumbnail}
+                    alt={photo.original_filename}
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
 
-              {/* Hover Actions */}
-              {!selectionMode && photo.status !== 'processing' && (
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-2">
-                  <a
-                    href={photo.urls.original}
-                    download
-                    onClick={(e) => e.stopPropagation()}
-                    className="p-1.5 bg-white/20 hover:bg-brand-500 text-white rounded-lg backdrop-blur-sm transition"
-                    title="Transferir"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                  </a>
-                </div>
-              )}
+                {/* Hover Actions */}
+                {!selectionMode && photo.status !== 'processing' && (
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-2">
+                    <a
+                      href={photo.urls.original}
+                      download
+                      onClick={(e) => e.stopPropagation()}
+                      className="p-1.5 bg-white/20 hover:bg-brand-500 text-white rounded-lg backdrop-blur-sm transition"
+                      title="Transferir"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    </a>
+                  </div>
+                )}
 
-              {/* Selection Overlay */}
-              {selectionMode && (
-                <div className={`absolute inset-0 transition-opacity duration-200 ${isSelected ? 'bg-brand-500/10' : 'bg-black/0 group-hover:bg-black/10'}`} />
-              )}
-            </div>
-          )
-        })}
+                {/* Selection Overlay */}
+                {selectionMode && (
+                  <div className={`absolute inset-0 transition-opacity duration-200 ${isSelected ? 'bg-brand-500/10' : 'bg-black/0 group-hover:bg-black/10'}`} />
+                )}
+              </div>
+            )
+          })
+        )}
       </div>
 
       {loading && (

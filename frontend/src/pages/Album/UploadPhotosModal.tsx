@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import { useDropzone } from "react-dropzone";
@@ -14,14 +14,41 @@ interface UploadPhotosModalProps {
 
 export default function UploadPhotosModal({ isOpen, onClose, albumId, onUploadSuccess }: UploadPhotosModalProps) {
   const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<{ [key: string]: string }>({});
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState<{ [key: string]: number }>({});
   const [uploadStatus, setUploadStatus] = useState<{ [key: string]: 'pending' | 'uploading' | 'success' | 'error' }>({});
   const [errorMessage, setErrorMessage] = useState<string>("");
   const MAX_CONCURRENT_UPLOADS = 3;
 
+  const previewsRef = useRef<{ [key: string]: string }>({});
+
+  // Sync ref with previews state
+  useEffect(() => {
+    previewsRef.current = previews;
+  }, [previews]);
+
+  // Clean up all preview URLs on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(previewsRef.current).forEach((url) => {
+        URL.revokeObjectURL(url);
+      });
+    };
+  }, []);
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles]);
+
+    // Generate preview object URLs
+    const newPreviews = acceptedFiles.reduce((acc, file) => {
+      if (file.type.startsWith('image/')) {
+        acc[file.name] = URL.createObjectURL(file);
+      }
+      return acc;
+    }, {} as { [key: string]: string });
+    setPreviews(prev => ({ ...prev, ...newPreviews }));
+
     const newStatus = acceptedFiles.reduce((acc, file) => {
       acc[file.name] = 'pending' as const;
       return acc;
@@ -97,6 +124,10 @@ export default function UploadPhotosModal({ isOpen, onClose, albumId, onUploadSu
 
     await Promise.all(uploadPromises);
 
+    // Revoke all preview URLs
+    Object.values(previews).forEach((url) => URL.revokeObjectURL(url));
+    setPreviews({});
+
     setFiles([]);
     setProgress({});
     setUploadStatus({});
@@ -110,6 +141,18 @@ export default function UploadPhotosModal({ isOpen, onClose, albumId, onUploadSu
   };
 
   const removeFile = (index: number) => {
+    const fileToRemove = files[index];
+    if (fileToRemove) {
+      const url = previews[fileToRemove.name];
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+      setPreviews(prev => {
+        const next = { ...prev };
+        delete next[fileToRemove.name];
+        return next;
+      });
+    }
     setFiles(files.filter((_, i) => i !== index));
   };
 
@@ -159,7 +202,7 @@ export default function UploadPhotosModal({ isOpen, onClose, albumId, onUploadSu
             </h4>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[280px] overflow-y-auto pr-2 custom-scrollbar">
               {files.map((file, idx) => {
-                const previewUrl = URL.createObjectURL(file);
+                const previewUrl = previews[file.name];
                 const status = uploadStatus[file.name] || 'pending';
                 const fileProgress = progress[file.name] || 0;
 

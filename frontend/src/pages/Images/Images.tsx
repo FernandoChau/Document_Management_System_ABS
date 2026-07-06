@@ -57,35 +57,52 @@ export default function Images() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {albums.map((album) => (
-          <Link
-            key={album.id}
-            to={`/album/${album.id}`}
-            className="group block rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition dark:border-gray-800 dark:bg-gray-900 overflow-hidden"
-          >
-            <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 relative">
-              {album.cover_image ? (
-                <img
-                  src={album.cover_image.urls.medium || album.cover_image.urls.thumbnail}
-                  alt={album.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="flex w-full h-full items-center justify-center text-gray-400">
-                  Sem capa
-                </div>
-              )}
+        {loading && albums.length === 0 ? (
+          Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={index}
+              className="animate-pulse rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900 overflow-hidden shadow-sm"
+            >
+              <div className="aspect-[4/3] bg-gray-200 dark:bg-gray-800"></div>
+              <div className="p-4">
+                <div className="h-5 bg-gray-200 dark:bg-gray-800 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-1/2"></div>
+              </div>
             </div>
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-900 dark:text-white truncate">
-                {album.title}
-              </h3>
-              {album.description && (
-                <p className="text-sm text-gray-500 truncate mt-1">{album.description}</p>
-              )}
-            </div>
-          </Link>
-        ))}
+          ))
+        ) : (
+          albums.map((album) => (
+            <Link
+              key={album.id}
+              to={`/album/${album.id}`}
+              className="group block rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition dark:border-gray-800 dark:bg-gray-900 overflow-hidden"
+            >
+              <div className="aspect-[4/3] bg-gray-100 dark:bg-gray-800 relative">
+                {album.cover_image ? (
+                  <img
+                    src={album.cover_image.urls.medium || album.cover_image.urls.thumbnail}
+                    alt={album.title}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <div className="flex w-full h-full items-center justify-center text-gray-400">
+                    Sem capa
+                  </div>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="font-semibold text-gray-900 dark:text-white truncate">
+                  {album.title}
+                </h3>
+                {album.description && (
+                  <p className="text-sm text-gray-500 truncate mt-1">{album.description}</p>
+                )}
+              </div>
+            </Link>
+          ))
+        )}
       </div>
 
       {loading && (

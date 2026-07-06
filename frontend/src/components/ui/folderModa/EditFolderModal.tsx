@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Modal } from "../modal";
 import Label from "@/components/form/Label";
 import Input from "@/components/form/input/InputField";
@@ -18,18 +18,24 @@ function EditFolderModal({
   onSubmit,
   folderData,
 }: EditFolderModalProps) {
-  const [id, setId] = useState(folderData[0]);
   const [name, setName] = useState(folderData[1]);
   const [slug, setSlug] = useState(folderData[2]);
   const [description, setDescription] = useState(folderData[3]);
 
+  // Sync local state when folderData prop changes (i.e. when user opens edit for a different folder)
+  useEffect(() => {
+    if (isOpen) {
+      setName(folderData[1]);
+      setSlug(folderData[2]);
+      setDescription(folderData[3]);
+    }
+  }, [isOpen, folderData[0]]); // Re-sync when modal opens or target folder changes
+
   const handleSubmit = () => {
     onSubmit(name, slug, description);
-    setName("");
-    setSlug("");
-    setDescription("");
     onClose();
   };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-[700px] m-4">
       <div className="no-scrollbar relative w-full max-w-[700px] overflow-y-auto rounded-3xl bg-white p-4 dark:bg-gray-900 lg:p-11">
@@ -51,7 +57,7 @@ function EditFolderModal({
                 </Label>
                 <Input
                   type="text"
-                  value={folderData[1]}
+                  value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Ex: Contractos"
                 />
@@ -63,7 +69,7 @@ function EditFolderModal({
                 </Label>
                 <Input
                   type="text"
-                  value={folderData[2]}
+                  value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="Ex: Con"
                 />
@@ -73,7 +79,7 @@ function EditFolderModal({
                 <Label>Descrição</Label>
                 <TextArea
                   placeholder="Escreva uma breve descrição sobre a pasta..."
-                  value={folderData[3]}
+                  value={description}
                   onChange={(value) => setDescription(value)}
                   rows={4}
                 />
@@ -84,7 +90,6 @@ function EditFolderModal({
             <Button size="sm" variant="outline" onClick={onClose}>
               Fechar
             </Button>
-            {/* <Button size="sm" onClick={handleSave}> */}
             <Button size="sm" onClick={handleSubmit}>
               Editar
             </Button>

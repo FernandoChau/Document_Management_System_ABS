@@ -9,6 +9,7 @@ import {
   downloadDocument,
   getLogs,
   LogEntry,
+  updateFolder,
 } from "@/api/folder-document.service";
 import PermissionModal from "@/components/modals/PermissionModal";
 import RemoveModal from "@/components/modals/RemoveModal";
@@ -44,7 +45,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { DocumentTextIcon, FolderOpenIcon } from "@heroicons/react/24/solid";
 import { AlertCircleIcon, CheckCircleIcon, DownloadIcon, FolderIcon } from "lucide-react";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router";
 import { useAuth } from "@/context/AuthContext";
 
@@ -159,21 +160,25 @@ function FolderTables2({ folderId }: FolderTables2Props) {
   }, [filterType, filterDateFrom, filterDateTo]);
   // ──────────────────────────────────────────────────────────────────────────
 
-  const handleShareItem = (data: Folder | Document, fileType: string) => {
+  const closeDropdown = useCallback(() => {
+    setOpenMenuId(null);
+  }, []);
+
+  const handleShareItem = useCallback((data: Folder | Document, fileType: string) => {
     setItemType(fileType);
     setFolderData(data as Folder);
     setActiveItemModal("share");
     closeDropdown();
-  };
+  }, [closeDropdown]);
 
-  const handleRemoveItem = (data: Folder | Document, fileType: string) => {
+  const handleRemoveItem = useCallback((data: Folder | Document, fileType: string) => {
     setItemType(fileType);
     setFolderData(data as Folder);
     setActiveItemModal("remove");
     closeDropdown();
-  };
+  }, [closeDropdown]);
 
-  const handleDownloadFolder = async (folder: Folder) => {
+  const handleDownloadFolder = useCallback(async (folder: Folder) => {
     if (downloadingId) return; // Prevent multiple downloads
 
     setDownloadingId(folder.id);
@@ -195,9 +200,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     } finally {
       setDownloadingId(null);
     }
-  };
+  }, [downloadingId]);
 
-  const handleDownloadDocument = async (doc: Document) => {
+  const handleDownloadDocument = useCallback(async (doc: Document) => {
     if (downloadingId) return; // Prevent multiple downloads
 
     setDownloadingId(doc.id);
@@ -219,9 +224,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     } finally {
       setDownloadingId(null);
     }
-  };
+  }, [downloadingId]);
 
-  const handleSetPermission = (data: Folder | Document, fileType: string) => {
+  const handleSetPermission = useCallback((data: Folder | Document, fileType: string) => {
     // Normalize: "file" -> "document", "folder" -> "folder"
     const normalizedType = fileType === "file" ? "document" : "folder";
     console.log("[handleSetPermission] Data received:", { data, fileType, normalizedType });
@@ -229,9 +234,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     setFolderData(data); // ✅ No cast - allows Folder | Document
     setActiveItemModal("permission")
     closeDropdown();
-  };
+  }, [closeDropdown]);
 
-  const handleOpenLogs = async (data: Folder | Document, fileType: "file" | "folder") => {
+  const handleOpenLogs = useCallback(async (data: Folder | Document, fileType: "file" | "folder") => {
     setItemType(fileType);
     setFolderData(data);
     setLogs([]);
@@ -250,28 +255,24 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     } finally {
       setLogsLoading(false);
     }
-  };
+  }, [closeDropdown]);
 
-  const handleCloseLogs = () => {
+  const handleCloseLogs = useCallback(() => {
     setActiveItemModal(null);
     setLogs([]);
     setLogsError(null);
     setLogsLoading(false);
-  };
+  }, []);
 
-  const handeEditFolderModal = (data: Folder) => {
+  const handeEditFolderModal = useCallback((data: Folder) => {
     setFolderData(data);
     setActiveFolderModal("edit");
     closeDropdown();
-  };
+  }, [closeDropdown]);
 
-  const toggleDropdownFolder = (folderId: string) => {
-    setOpenMenuId(openMenuId === folderId ? null : folderId);
-  };
-
-  const closeDropdown = () => {
-    setOpenMenuId(null);
-  };
+  const toggleDropdownFolder = useCallback((folderId: string) => {
+    setOpenMenuId(prev => prev === folderId ? null : folderId);
+  }, []);
 
   const extractFolders = (payload: unknown): Folder[] => {
     const asRecord = payload as Record<string, unknown>;
@@ -351,10 +352,14 @@ function FolderTables2({ folderId }: FolderTables2Props) {
   }
 
   // Função reutilizável para recarregar pastas
-  const refreshFolders = async (isBackground = false) => {
+  const refreshFolders = useCallback(async (isBackground = false) => {
     try {
       if (!isBackground) {
         setLoading(true);
+        // Clear listing to trigger skeleton view immediately and prevent layout shift
+        setFolders([]);
+        setDocuments([]);
+        setCurrentFolder(null);
       }
       setError(null);
 
@@ -386,11 +391,11 @@ function FolderTables2({ folderId }: FolderTables2Props) {
         setLoading(false);
       }
     }
-  };
+  }, [currentFolderId]);
 
   useEffect(() => {
     refreshFolders();
-  }, [currentFolderId]);
+  }, [currentFolderId, refreshFolders]);
 
   const completedCount = queue.filter(
     (item) => item.status === "completed" && item.folderId === currentFolderId
@@ -407,17 +412,17 @@ function FolderTables2({ folderId }: FolderTables2Props) {
       lastRefreshedCompletedRef.current[folderKey] = currentCompleted;
       refreshFolders(true);
     }
-  }, [completedCount, currentFolderId]);
+  }, [completedCount, currentFolderId, refreshFolders]);
 
-  const handleCreateFile = () => {
+  const handleCreateFile = useCallback(() => {
     setActiveFileModal("create");
-  };
+  }, []);
 
-  const handleCreateFolder = () => {
+  const handleCreateFolder = useCallback(() => {
     setActiveFolderModal("create");
-  };
+  }, []);
 
-  const handleFolderCreate = async (
+  const handleFolderCreate = useCallback(async (
     name: string,
     slug: string,
     description: string,
@@ -451,9 +456,30 @@ function FolderTables2({ folderId }: FolderTables2Props) {
       setError(errorMsg);
       throw error; // Re-throw para que o modal saiba do erro
     }
-  };
+  }, [refreshFolders]);
 
-  const handleUploadFiles = async (files: File[]) => {
+  const handleFolderUpdate = useCallback(async (
+    name: string,
+    slug: string,
+    description: string
+  ) => {
+    if (!folderData || !("slug" in folderData)) return;
+    try {
+      setError(null);
+      await updateFolder(folderData.id, { name, slug, description });
+      const successMsg = "pasta atualizada com Sucesso!";
+      setSuccess(successMsg);
+      await refreshFolders();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Erro ao atualizar a pasta";
+      setError(errorMsg);
+      throw error;
+    }
+  }, [folderData, refreshFolders]);
+
+  const handleUploadFiles = useCallback(async (files: File[]) => {
     // Feedback visual (o upload real já foi feito pelo Modal)
     const isRootUpload = !currentFolderId;
     const successMsg = isRootUpload
@@ -463,9 +489,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     setSuccess(successMsg);
     await refreshFolders();
     setTimeout(() => setSuccess(null), 3000);
-  };
+  }, [currentFolderId, refreshFolders]);
 
-  const navigateToFolder = (targetFolderId?: string | null) => {
+  const navigateToFolder = useCallback((targetFolderId?: string | null) => {
     if (folderId) {
       return;
     }
@@ -479,36 +505,27 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     }
 
     setSearchParams(nextParams);
-  };
+  }, [folderId, searchParams, setSearchParams]);
 
-  const handleOpenItem = (itemId: string) => {
+  const handleOpenItem = useCallback((itemId: string) => {
     const folder = folders.find(f => f.id === itemId);
     if (folder) {
       navigateToFolder(folder.id);
+      return;
     }
-  };
+    const doc = documents.find(d => d.id === itemId);
+    if (doc) {
+      handleDownloadDocument(doc);
+    }
+  }, [folders, documents, navigateToFolder, handleDownloadDocument]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (folderId) {
       return;
     }
 
     navigateToFolder(currentFolder?.parent_id);
-  };
-
-  if (loading) {
-    // console.log("⏳ LOADING...");
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500 mx-auto"></div>
-          {/* <p className="mt-4 text-gray-600 dark:text-gray-400">
-            A carregar utilizadores...
-          </p> */}
-        </div>
-      </div>
-    );
-  }
+  }, [folderId, currentFolder?.parent_id, navigateToFolder]);
 
   if (error) {
     return (
@@ -527,7 +544,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     );
   }
 
-  const isEmpty = filteredFolders.length === 0 && filteredDocuments.length === 0;
+  const isEmpty = !loading && filteredFolders.length === 0 && filteredDocuments.length === 0;
   const hasNoResults =
     isEmpty && (visibleFolders.length > 0 || visibleDocuments.length > 0);
   return (
@@ -542,20 +559,29 @@ function FolderTables2({ folderId }: FolderTables2Props) {
             >
               Raiz
             </button>
-            {breadcrumbs.map((crumb) => (
-              <div key={crumb.id} className="flex items-center gap-2">
-                <span className="text-gray-400">/</span>
-                <button
-                  onClick={() => navigateToFolder(crumb.id)}
-                  className={`${crumb.id === currentFolderId
-                    ? "font-bold text-gray-900 dark:text-white"
-                    : "font-medium hover:text-brand-600 dark:hover:text-brand-400"
-                    }`}
-                >
-                  {crumb.name}
-                </button>
-              </div>
-            ))}
+            {breadcrumbs.length > 0 ? (
+              breadcrumbs.map((crumb) => (
+                <div key={crumb.id} className="flex items-center gap-2">
+                  <span className="text-gray-400">/</span>
+                  <button
+                    onClick={() => navigateToFolder(crumb.id)}
+                    className={`${crumb.id === currentFolderId
+                      ? "font-bold text-gray-900 dark:text-white"
+                      : "font-medium hover:text-brand-600 dark:hover:text-brand-400"
+                      }`}
+                  >
+                    {crumb.name}
+                  </button>
+                </div>
+              ))
+            ) : (
+              loading && currentFolderId && (
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-400">/</span>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-800 rounded w-24 animate-pulse" />
+                </div>
+              )
+            )}
           </div>
         </div>
 
@@ -741,7 +767,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
         </div>
       )}
 
-      {!isEmpty && (<div className="max-w-full max-h-[calc(100vh-200px)] overflow-x-auto">
+      <div className="max-w-full max-h-[calc(100vh-200px)] overflow-x-auto">
         <Table>
           <TableHeader className=" sticky border-gray-100 dark:border-gray-800 border-y">
             <TableRow>
@@ -767,8 +793,41 @@ function FolderTables2({ folderId }: FolderTables2Props) {
             </TableRow>
           </TableHeader>
 
-          <TableBody className="divide-y divide-gray-100 dark:divide-gray-800]">
-            {filteredFolders.map((folder) => (
+          <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
+            {/* ─── Loading Skeleton ─────────────────────────────────── */}
+            {loading && folders.length === 0 && documents.length === 0 && (
+              <>
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={`sk-${index}`} className="border-b border-gray-100 dark:border-gray-800">
+                    <TableCell className="py-3 rounded-l-2xl">
+                      <div className="flex items-center gap-2">
+                        <div className="h-[50px] w-[50px] flex items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 animate-pulse">
+                          <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                        </div>
+                        <div className="space-y-1.5 flex-1">
+                          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse" />
+                          <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/4 animate-pulse" />
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="py-3">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 animate-pulse" />
+                    </TableCell>
+                    <TableCell className="py-5 pr-2 flex items-center gap-2 rounded-r-2xl">
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                        <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                        <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                        <div className="h-8 w-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </>
+            )}
+
+            {/* ─── Folders ──────────────────────────────────────────── */}
+            {!loading && filteredFolders.map((folder) => (
               <TableRow
                 key={folder.id}
                 className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30 "
@@ -866,103 +925,99 @@ function FolderTables2({ folderId }: FolderTables2Props) {
               </TableRow>
             ))}
 
-            {/* ============= SEÇÃO DE DOCUMENTOS ============= */}
-            {filteredDocuments.length > 0 && (
-              <>
-                {filteredDocuments.map((document) => (
-                  <TableRow
-                    key={document.id}
-                    className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30 "
+            {/* ─── Documents ────────────────────────────────────────── */}
+            {!loading && filteredDocuments.map((document) => (
+              <TableRow
+                key={document.id}
+                className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800/30 "
+              >
+                <TableCell className="py-3 rounded-l-2xl">
+                  <div
+                    onDoubleClick={() => handleOpenItem(document.id)}
+                    className="flex items-center gap-2"
                   >
-                    <TableCell className="py-3 rounded-l-2xl">
-                      <div
-                        onDoubleClick={() => handleOpenItem(document.id)}
-                        className="flex items-center gap-2"
+                    <div className="h-[50px] w-[50px] flex items-center justify-center overflow-hidden rounded-md">
+                      <DocumentTextIcon className="h-8 w-8 text-brand-400 dark:text-yellow-300" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-700 text-theme-m dark:text-white/80">
+                        {document.name}
+                      </p>
+                      <p className="text-gray-500 text-theme-xs dark:text-gray-400">
+                        Ref: {document.reference_code}
+                      </p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="py-3 w-5 pr-15 text-gray-500 text-theme-sm dark:text-gray-400">
+                  {document.created_at ? formatDate(document.created_at) : "—"}
+                </TableCell>
+                <TableCell className="py-5 pr-2 flex items-center justify-end gap-2 rounded-r-2xl text-gray-500 text-theme-sm dark:text-gray-400">
+                  <div className="flex">
+                    <button
+                      onClick={() => handleOpenLogs(document, "file")}
+                      className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
+                      title="Ver logs"
+                    >
+                      <EyeIcon className="size-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDownloadDocument(document)}
+                      disabled={downloadingId === document.id || !document.permissions?.can_download}
+                      className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={!document.permissions?.can_download ? "Sem permissão para download" : "Fazer download do ficheiro"}
+                    >
+                      {downloadingId === document.id ? (
+                        <div className="animate-spin h-4 w-4 border-2 border-brand-500 border-t-transparent rounded-full" />
+                      ) : (
+                        <DownloadIcon className="size-4.5" />
+                      )}
+                    </button>
+                    <div className="mt-1">
+                      <button
+                        className="dropdown-toggle"
+                        onClick={() => toggleDropdownFolder(document.id)}
                       >
-                        <div className="h-[50px] w-[50px] flex items-center justify-center overflow-hidden rounded-md">
-                          <DocumentTextIcon className="h-8 w-8 text-brand-400 dark:text-yellow-300" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-700 text-theme-m dark:text-white/80">
-                            {document.name}
-                          </p>
-                          <p className="text-gray-500 text-theme-xs dark:text-gray-400">
-                            Ref: {document.reference_code}
-                          </p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="py-3 w-5 pr-15 text-gray-500 text-theme-sm dark:text-gray-400">
-                      {document.created_at ? formatDate(document.created_at) : "—"}
-                    </TableCell>
-                    <TableCell className="py-5 pr-2 flex items-center justify-end gap-2 rounded-r-2xl text-gray-500 text-theme-sm dark:text-gray-400">
-                      <div className="flex">
-                        <button
-                          onClick={() => handleOpenLogs(document, "file")}
-                          className="h-8 w-8 border text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full"
-                          title="Ver logs"
+                        <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
+                      </button>
+                      <Dropdown
+                        isOpen={openMenuId === document.id}
+                        onClose={closeDropdown}
+                        className="w-40 p-2"
+                      >
+                        <DropdownItem
+                          onItemClick={() => handleShareItem(document, "file")}
+                          disabled={!document.permissions?.can_share}
+                          className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 ${!document.permissions?.can_share ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                          <EyeIcon className="size-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDownloadDocument(document)}
-                          disabled={downloadingId === document.id || !document.permissions?.can_download}
-                          className="h-8 w-8 border text-gray-500 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 duration-300 dark:duration-150 border-transparent hover:border-brand-300 dark:hover:border-transparent hover:bg-brand-100 flex dark:hover:bg-gray-700 items-center justify-center rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={!document.permissions?.can_download ? "Sem permissão para download" : "Fazer download do ficheiro"}
+                          <PaperAirplaneIcon className=" -rotate-45 -mt-0.5 size-4.5" />
+                          Partilhar
+                        </DropdownItem>
+                        <DropdownItem
+                          onItemClick={() => handleSetPermission(document, "file")}
+                          disabled={!document.permissions?.can_manage_permissions}
+                          className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 ${!document.permissions?.can_manage_permissions ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
-                          {downloadingId === document.id ? (
-                            <div className="animate-spin h-4 w-4 border-2 border-brand-500 border-t-transparent rounded-full" />
-                          ) : (
-                            <DownloadIcon className="size-4.5" />
-                          )}
-                        </button>
-                        <div className="mt-1">
-                          <button
-                            className="dropdown-toggle"
-                            onClick={() => toggleDropdownFolder(document.id)}
-                          >
-                            <MoreDotIcon className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 size-6" />
-                          </button>
-                          <Dropdown
-                            isOpen={openMenuId === document.id}
-                            onClose={closeDropdown}
-                            className="w-40 p-2"
-                          >
-                            <DropdownItem
-                              onItemClick={() => handleShareItem(document, "file")}
-                              disabled={!document.permissions?.can_share}
-                              className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 ${!document.permissions?.can_share ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                              <PaperAirplaneIcon className=" -rotate-45 -mt-0.5 size-4.5" />
-                              Partilhar
-                            </DropdownItem>
-                            <DropdownItem
-                              onItemClick={() => handleSetPermission(document, "file")}
-                              disabled={!document.permissions?.can_manage_permissions}
-                              className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300 ${!document.permissions?.can_manage_permissions ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                              <KeyIcon className="size-3.5 -rotate-180" />
-                              Permissões
-                            </DropdownItem>
-                            <DropdownItem
-                              onItemClick={() => handleRemoveItem(document, "file")}
-                              disabled={!document.permissions?.can_delete}
-                              className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${!document.permissions?.can_delete ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                              <TrashBinIcon />
-                              Remover
-                            </DropdownItem>
-                          </Dropdown>
-                        </div>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </>
-            )}
+                          <KeyIcon className="size-3.5 -rotate-180" />
+                          Permissões
+                        </DropdownItem>
+                        <DropdownItem
+                          onItemClick={() => handleRemoveItem(document, "file")}
+                          disabled={!document.permissions?.can_delete}
+                          className={`flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-red-100 hover:text-red-600 dark:text-gray-400 dark:hover:bg-red-500/10 dark:hover:text-red-400 ${!document.permissions?.can_delete ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                          <TrashBinIcon />
+                          Remover
+                        </DropdownItem>
+                      </Dropdown>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
-      </div>)}
+      </div>
 
       {/* Modals */}
       <FileUploadModal
@@ -981,7 +1036,7 @@ function FolderTables2({ folderId }: FolderTables2Props) {
       <EditFolderModal
         isOpen={activeFolderModal === "edit"}
         onClose={() => setActiveFolderModal(null)}
-        onSubmit={handleCreateFolder}
+        onSubmit={handleFolderUpdate}
         folderData={folderData && "slug" in folderData ? [folderData.id, folderData.name, folderData.slug, folderData.description || ""] : ["", "", "", ""]}
       />
 

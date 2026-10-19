@@ -32,6 +32,7 @@ const AlbumDetail = lazy(() => import("./pages/Album/AlbumDetail"));
 const Reports = lazy(() => import("./pages/Reports/Reports"));
 const Users = lazy(() => import("./pages/Users/Users"));
 const PublicShare = lazy(() => import("./pages/PublicShare/PublicShare"));
+const DocumentPreview = lazy(() => import("./pages/DocumentPreview"));
 
 const PageLoader = () => (
   <div className="flex flex-col items-center justify-center min-h-[50vh] w-full">
@@ -70,6 +71,9 @@ export default function App() {
 
               {/* DMS FOLDERS */}
               <Route path="/pastas" element={<Pastas />} />
+
+              {/* DMS DOCUMENT PREVIEW */}
+              <Route path="/documento/:id" element={<DocumentPreview />} />
 
               {/* DMS REPORTS */}
               <Route path="/report" element={<Reports />} />

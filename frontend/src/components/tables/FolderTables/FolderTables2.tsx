@@ -46,7 +46,7 @@ import {
 import { DocumentTextIcon, FolderOpenIcon } from "@heroicons/react/24/solid";
 import { AlertCircleIcon, CheckCircleIcon, DownloadIcon, FolderIcon } from "lucide-react";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
-import { useSearchParams } from "react-router";
+import { useSearchParams, useNavigate } from "react-router";
 import { useAuth } from "@/context/AuthContext";
 
 
@@ -57,6 +57,7 @@ interface FolderTables2Props {
 function FolderTables2({ folderId }: FolderTables2Props) {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { queue } = useUpload();
 
@@ -515,9 +516,9 @@ function FolderTables2({ folderId }: FolderTables2Props) {
     }
     const doc = documents.find(d => d.id === itemId);
     if (doc) {
-      handleDownloadDocument(doc);
+      navigate(`/documento/${doc.id}`);
     }
-  }, [folders, documents, navigateToFolder, handleDownloadDocument]);
+  }, [folders, documents, navigateToFolder, navigate]);
 
   const handleBack = useCallback(() => {
     if (folderId) {
@@ -985,6 +986,13 @@ function FolderTables2({ folderId }: FolderTables2Props) {
                         onClose={closeDropdown}
                         className="w-40 p-2"
                       >
+                        <DropdownItem
+                          onItemClick={() => navigate(`/documento/${document.id}`)}
+                          className="flex items-center gap-1 w-full font-normal text-left text-gray-500 rounded-lg hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                        >
+                          <EyeIcon className="size-4" />
+                          Visualizar
+                        </DropdownItem>
                         <DropdownItem
                           onItemClick={() => handleShareItem(document, "file")}
                           disabled={!document.permissions?.can_share}

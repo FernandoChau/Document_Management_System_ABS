@@ -169,6 +169,14 @@ class Document extends Model
     }
 
     /**
+     * Get document metadata as array
+     */
+    public function getMetadata(): array
+    {
+        return $this->metadata;
+    }
+
+    /**
      * Get human-readable file size
      */
     public function getHumanReadableSizeAttribute(): string

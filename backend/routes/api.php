@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\FolderPermissionController;
 use App\Http\Controllers\Api\DocumentPermissionController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\GroupController;
+use App\Http\Controllers\Api\ReportController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -167,6 +168,12 @@ Route::prefix('/')->group(function () {
             Route::get('/user', [DashboardController::class, 'user']);
             Route::get('/departamento/{department}', [DashboardController::class, 'department']);
             Route::get('/pasta/{folder}', [DashboardController::class, 'folder']);
+        });
+
+        // ==================== RELATÓRIOS (WEEKLY REPORTS) ====================
+        Route::prefix('relatorios')->group(function () {
+            Route::get('/semanal', [ReportController::class, 'weeklyIndex']);
+            Route::get('/exportar-semana', [ReportController::class, 'exportWeek']);
         });
 
         // Rotas de Utilizadores (Admin)

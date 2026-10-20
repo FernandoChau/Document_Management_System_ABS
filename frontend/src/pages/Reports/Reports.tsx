@@ -1,11 +1,17 @@
-import ReportsTable from '@/components/tables/ReportsTable/ReportsTable'
+import React from "react";
+import PageMeta from "@/components/common/PageMeta";
+import ReportsTable from "@/components/tables/ReportsTable/ReportsTable";
 
-function Reports() {
+export default function Reports() {
   return (
-    <div>
-      <ReportsTable />
-    </div>
-  )
+    <>
+      <PageMeta
+        title="Relatórios & Índices Semanais | ABS DMS"
+        description="Índice semanal dos documentos submetidos para a plataforma ABS DMS, organizados hierarquicamente por ano, mês e semana."
+      />
+      <div className="max-w-full">
+        <ReportsTable />
+      </div>
+    </>
+  );
 }
-
-export default Reports

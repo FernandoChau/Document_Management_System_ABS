@@ -25,9 +25,9 @@ export const WeeklyReportItem: React.FC<WeeklyReportItemProps> = ({
   onPreviewDocument,
   onDownloadDocument,
   downloadingDocId,
-  defaultExpanded = true,
+  // defaultExpanded = false,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExportCsv = async (e: React.MouseEvent) => {
@@ -69,7 +69,7 @@ export const WeeklyReportItem: React.FC<WeeklyReportItemProps> = ({
               <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
                 {week.label}
               </h4>
-              <span className="inline-flex items-center rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-400">
+              <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-gray-500 dark:bg-indigo-900/30 dark:text-gray-400">
                 {week.count} {week.count === 1 ? "documento" : "documentos"}
               </span>
             </div>
@@ -117,10 +117,10 @@ export const WeeklyReportItem: React.FC<WeeklyReportItemProps> = ({
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50/60 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:border-gray-800 dark:bg-gray-800/50 dark:text-gray-400">
                 <th className="py-2.5 px-4">Código</th>
-                <th className="py-2.5 px-4">Documento / Pasta</th>
+                {/* <th className="py-2.5 px-4">Documento / Pasta</th> */}
                 <th className="py-2.5 px-4">Quem Subiu</th>
                 <th className="py-2.5 px-4">Quando Subiu</th>
-                <th className="py-2.5 px-4">Tamanho</th>
+                {/* <th className="py-2.5 px-4">Tamanho</th> */}
                 <th className="py-2.5 px-4 text-right">Ações</th>
               </tr>
             </thead>

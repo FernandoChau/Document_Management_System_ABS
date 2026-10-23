@@ -86,7 +86,7 @@ export const DocumentRow: React.FC<DocumentRowProps> = ({
           >
             {document.code}
           </span>
-          <button
+          {/* <button
             onClick={handleCopyCode}
             className="p-1 rounded text-gray-400 hover:text-brand-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             title="Copiar código"
@@ -96,12 +96,12 @@ export const DocumentRow: React.FC<DocumentRowProps> = ({
             ) : (
               <DocumentDuplicateIcon className="size-3.5" />
             )}
-          </button>
+          </button> */}
         </div>
       </td>
 
       {/* 2. Nome do Documento & Pasta */}
-      <td className="py-3 px-4">
+      {/* <td className="py-3 px-4">
         <div className="flex items-center gap-3">
           <span
             className={`inline-flex items-center justify-center font-bold text-[10px] w-9 h-9 rounded-lg border shrink-0 ${badge.bg}`}
@@ -124,7 +124,7 @@ export const DocumentRow: React.FC<DocumentRowProps> = ({
             </div>
           </div>
         </div>
-      </td>
+      </td> */}
 
       {/* 3. Quem Subiu */}
       <td className="py-3 px-4 whitespace-nowrap">
@@ -161,9 +161,9 @@ export const DocumentRow: React.FC<DocumentRowProps> = ({
       </td>
 
       {/* 5. Tamanho */}
-      <td className="py-3 px-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400 font-mono">
+      {/* <td className="py-3 px-4 whitespace-nowrap text-xs text-gray-500 dark:text-gray-400 font-mono">
         {document.size_formatted}
-      </td>
+      </td> */}
 
       {/* 6. Ações */}
       <td className="py-3 px-4 whitespace-nowrap text-right">
@@ -189,7 +189,7 @@ export const DocumentRow: React.FC<DocumentRowProps> = ({
             )}
           </button>
 
-          <a
+          {/* <a
             href={`/documento/${document.id}`}
             target="_blank"
             rel="noreferrer"
@@ -197,7 +197,7 @@ export const DocumentRow: React.FC<DocumentRowProps> = ({
             title="Abrir em nova aba"
           >
             <ArrowTopRightOnSquareIcon className="size-3.5" />
-          </a>
+          </a> */}
         </div>
       </td>
     </tr>

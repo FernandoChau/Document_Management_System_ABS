@@ -387,7 +387,7 @@ export default function ReportsTable() {
                         <h3 className="text-lg font-bold text-gray-900 dark:text-white">
                           Ano {yearNode.year}
                         </h3>
-                        <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-bold text-brand-800 dark:bg-brand-900/40 dark:text-brand-300">
+                        <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-bold text-gray-500 dark:bg-indigo-900/40 dark:text-gray-300">
                           {yearNode.count} {yearNode.count === 1 ? "documento" : "documentos"}
                         </span>
                       </div>
@@ -432,7 +432,7 @@ export default function ReportsTable() {
                             className="flex items-center justify-between px-5 py-3.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-white/[0.03] border-b border-gray-100 dark:border-gray-800 transition-colors"
                           >
                             <div className="flex items-center gap-3">
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400">
+                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-300/40 text-brand-600 dark:bg-indigo-900/30 dark:text-indigo-400">
                                 <CalendarIcon className="size-5" />
                               </div>
                               <div>
@@ -440,7 +440,7 @@ export default function ReportsTable() {
                                   <h4 className="text-sm font-bold text-gray-800 dark:text-gray-100">
                                     {monthNode.name} de {yearNode.year}
                                   </h4>
-                                  <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                                  <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-gray-600 dark:bg-gray-900/30 dark:text-gray-400">
                                     {monthNode.count} docs
                                   </span>
                                 </div>

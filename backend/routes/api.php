@@ -30,13 +30,15 @@ Route::get('/user', function (Request $request) {
 
 Route::prefix('/')->group(function () {
     Route::post('/registar', [RegisterController::class, 'register']);      //checked
-    Route::post('/entrar', [LoginController::class, 'login']);              //checked
-    Route::post('/entrar/verificar-2fa', [LoginController::class, 'verifyTwoFactor']); //2FA login step
-    Route::post('/recuperar-senha', [PasswordController::class, 'forgot']); //checked
-    Route::post('/redefinir-senha', [PasswordController::class, 'reset']);  //checked
+    Route::post('/entrar', [LoginController::class, 'login'])->middleware('throttle:5,1');
+    Route::post('/entrar/verificar-2fa', [LoginController::class, 'verifyTwoFactor'])->middleware('throttle:5,1');
+    Route::post('/recuperar-senha', [PasswordController::class, 'forgot'])->middleware('throttle:5,1');
+    Route::post('/redefinir-senha', [PasswordController::class, 'reset'])->middleware('throttle:5,1');
 
     Route::get('/compartilhamentos/{token}', [ShareLinkController::class, 'show']);
+    Route::post('/compartilhamentos/{token}/aceder', [ShareLinkController::class, 'show'])->middleware('throttle:10,1');
     Route::get('/compartilhamentos/{token}/baixar', [ShareLinkController::class, 'download']);
+    Route::post('/compartilhamentos/{token}/baixar', [ShareLinkController::class, 'download'])->middleware('throttle:10,1');
 
     //Authetication Required
     Route::middleware(['auth:sanctum', 'check.auth.status'])->group(function () {
@@ -46,7 +48,7 @@ Route::prefix('/')->group(function () {
         Route::post('/atualizar-senha', [ProfileController::class, 'updatePassword']);              //checked    
 
         // Two-Factor Authentication
-        Route::prefix('autenticacao-dois-fatores')->group(function () {
+        Route::prefix('autenticacao-dois-fatores')->middleware('throttle:5,1')->group(function () {
             Route::post('/ativar', [TwoFactorAuthenticationController::class, 'enable']);           //Checked
             Route::post('/confirmar', [TwoFactorAuthenticationController::class, 'confirm']);
             Route::post('/desativar', [TwoFactorAuthenticationController::class, 'disable']);
@@ -142,7 +144,6 @@ Route::prefix('/')->group(function () {
         Route::prefix('compartilhamentos')->group(function () {
             Route::get('/', [ShareLinkController::class, 'index']);
             Route::post('/', [ShareLinkController::class, 'store']);
-            Route::get('/{shareLink}', [ShareLinkController::class, 'show']);
             Route::put('/{shareLink}', [ShareLinkController::class, 'update']);
             Route::delete('/{shareLink}', [ShareLinkController::class, 'destroy']);
         });

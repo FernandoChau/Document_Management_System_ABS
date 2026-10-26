@@ -6,7 +6,7 @@ use App\Models\Photo;
 use App\Models\Album;
 use App\Http\Requests\StorePhotoRequest;
 use App\Http\Resources\PhotoResource;
-use App\Services\ImageProcessingService;
+use App\Jobs\ProcessImageJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
@@ -38,20 +38,31 @@ class PhotoController extends BaseController
         $uuid = Str::uuid()->toString();
         $generatedFilename = $uuid . '.' . $extension;
         
-        $path = $file->storeAs('images/original/' . $album->id, $generatedFilename, 'local');
+        $path = $file->storeAs('images/original/' . $album->id, $generatedFilename, 'private');
 
-        $photo = Photo::create([
-            'album_id' => $album->id,
-            'original_filename' => $file->getClientOriginalName(),
-            'generated_filename' => $generatedFilename,
-            'mime_type' => $file->getClientMimeType(),
-            'size' => $file->getSize(),
-            'status' => 'processing',
-            'uploaded_by' => $request->user()->id,
-        ]);
+        if (!$path) {
+            throw new \RuntimeException('Unable to store uploaded image.');
+        }
 
-        // Process image synchronously
-        ImageProcessingService::processImage($photo);
+        try {
+            $photo = Photo::create([
+                'album_id' => $album->id,
+                'original_filename' => $file->getClientOriginalName(),
+                'generated_filename' => $generatedFilename,
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize(),
+                'status' => 'processing',
+                'uploaded_by' => $request->user()->id,
+            ]);
+        } catch (\Throwable $exception) {
+            if (Storage::disk('private')->exists($path) && !Storage::disk('private')->delete($path)) {
+                report(new \RuntimeException("Failed to clean up uploaded image after database failure: {$path}"));
+            }
+
+            throw $exception;
+        }
+
+        ProcessImageJob::dispatch($photo);
 
         return response()->json(new PhotoResource($photo), 201);
     }
@@ -76,10 +87,10 @@ class PhotoController extends BaseController
     {
         $this->authorize('view', $photo);
         $path = 'images/original/' . $photo->album_id . '/' . $photo->generated_filename;
-        if (!Storage::disk('local')->exists($path)) {
+        if (!Storage::disk('private')->exists($path)) {
             abort(404);
         }
-        return Storage::disk('local')->download($path, $photo->original_filename);
+        return Storage::disk('private')->download($path, $photo->original_filename);
     }
 
     public function thumbnail(Photo $photo)
@@ -88,10 +99,10 @@ class PhotoController extends BaseController
         $ext = pathinfo($photo->generated_filename, PATHINFO_EXTENSION);
         $filename = pathinfo($photo->generated_filename, PATHINFO_FILENAME) . '_thumb.' . $ext;
         $path = 'images/thumbnails/' . $photo->album_id . '/' . $filename;
-        if (!Storage::disk('local')->exists($path)) {
+        if (!Storage::disk('private')->exists($path)) {
             abort(404);
         }
-        return response()->file(Storage::disk('local')->path($path), [
+        return response()->file(Storage::disk('private')->path($path), [
             'Cache-Control' => 'public, max-age=31536000, immutable',
         ]);
     }
@@ -102,10 +113,10 @@ class PhotoController extends BaseController
         $ext = pathinfo($photo->generated_filename, PATHINFO_EXTENSION);
         $filename = pathinfo($photo->generated_filename, PATHINFO_FILENAME) . '_medium.' . $ext;
         $path = 'images/medium/' . $photo->album_id . '/' . $filename;
-        if (!Storage::disk('local')->exists($path)) {
+        if (!Storage::disk('private')->exists($path)) {
             abort(404);
         }
-        return response()->file(Storage::disk('local')->path($path), [
+        return response()->file(Storage::disk('private')->path($path), [
             'Cache-Control' => 'public, max-age=31536000, immutable',
         ]);
     }

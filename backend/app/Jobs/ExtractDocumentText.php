@@ -2,25 +2,24 @@
 
 namespace App\Jobs;
 
+use App\Models\Document;
+use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class ExtractDocumentText implements ShouldQueue
 {
-    use Queueable;
+    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * Create a new job instance.
-     */
-    protected $document;
+    public int $tries = 3;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct(\App\Models\Document $document)
+    public function __construct(public Document $document)
     {
-        $this->document = $document;
     }
 
     /**
@@ -28,45 +27,56 @@ class ExtractDocumentText implements ShouldQueue
      */
     public function handle(): void
     {
-        $path = Storage::disk('private')->path($this->document->file_path);
-        $mime = $this->document->mime_type;
-        $text = '';
-        $status = 'failed';
-
         try {
-            if (!file_exists($path)) {
-                throw new \Exception("File not found at $path");
+            if (!Storage::disk('private')->exists($this->document->file_path)) {
+                throw new \RuntimeException("Document file not found: {$this->document->id}");
             }
 
-            // Simple extraction logic (Expandable)
-            if (str_contains($mime, 'text/plain')) {
-                $text = file_get_contents($path);
-                $status = 'completed';
-            } elseif (str_contains($mime, 'pdf')) {
-                // Placeholder for PDF parser (e.g. Spatie\PdfToText)
-                // $text = (new Pdf())->setPdf($path)->text();
-                $text = "[PDF Content Placeholder - Install spatie/pdf-to-text]";
-                $status = 'completed';
-            } else {
-                $text = "[Binary or Unsupported Content]";
-                $status = 'completed'; // Marked complete but empty
+            if ($this->document->mime_type !== 'text/plain') {
+                $this->document->content()->updateOrCreate(
+                    ['document_id' => $this->document->id],
+                    [
+                        'extracted_text' => null,
+                        'extraction_status' => 'failed',
+                    ]
+                );
+
+                return;
             }
 
-            // Save to DB
+            $stream = Storage::disk('private')->readStream($this->document->file_path);
+            if ($stream === false) {
+                throw new \RuntimeException("Unable to read document: {$this->document->id}");
+            }
+
+            try {
+                $text = stream_get_contents($stream);
+            } finally {
+                fclose($stream);
+            }
+
+            if ($text === false) {
+                throw new \RuntimeException("Unable to extract document text: {$this->document->id}");
+            }
+
             $this->document->content()->updateOrCreate(
                 ['document_id' => $this->document->id],
                 [
                     'extracted_text' => $text,
-                    'extraction_status' => $status,
+                    'extraction_status' => 'completed',
                 ]
             );
-            
-        } catch (\Exception $e) {
-             $this->document->content()->updateOrCreate(
+        } catch (Throwable $exception) {
+            Log::error('Document text extraction failed.', [
+                'document_id' => $this->document->id,
+                'exception' => $exception,
+            ]);
+
+            $this->document->content()->updateOrCreate(
                 ['document_id' => $this->document->id],
                 [
                     'extraction_status' => 'failed',
-                    'extracted_text' => "Error: " . $e->getMessage()
+                    'extracted_text' => null,
                 ]
             );
         }

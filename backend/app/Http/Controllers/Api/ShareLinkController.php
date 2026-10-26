@@ -13,7 +13,6 @@ use App\Services\PermissionValidator;
 use App\Exceptions\PermissionDeniedException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
@@ -82,7 +81,7 @@ class ShareLinkController extends Controller
             'shareable_type' => $request->shareable_type,
             'shareable_id' => $request->shareable_id,
             'expires_at' => $request->expires_at,
-            'password' => $request->password ? hash('sha256', $request->password) : null,
+            'password' => $request->password,
             'created_by' => $user->id,
         ]);
 
@@ -121,16 +120,21 @@ class ShareLinkController extends Controller
             return response()->json(['message' => 'Password required'], 403);
         }
 
-        if ($shareLink->password && !password_verify($request->password, $shareLink->password)) {
+        if ($shareLink->password && !$shareLink->checkPassword((string) $request->post('password'))) {
             return response()->json(['message' => 'Invalid password'], 403);
         }
 
         $resource = $shareLink->resource;
+        $resourceData = match ($shareLink->shareable_type) {
+            'Document' => $resource?->getMetadata(),
+            'Folder' => $resource ? $resource->only(['id', 'name', 'slug', 'reference_code', 'created_at']) : null,
+            default => null,
+        };
 
         return response()->json([
             'id' => $shareLink->id,
             'type' => $shareLink->shareable_type,
-            'resource' => $resource,
+            'resource' => $resourceData,
             'created_at' => $shareLink->created_at,
             'expires_at' => $shareLink->expires_at,
         ]);
@@ -158,7 +162,7 @@ class ShareLinkController extends Controller
             return response()->json(['message' => 'Password required'], 403);
         }
 
-        if ($shareLink->password && !password_verify($request->password, $shareLink->password)) {
+        if ($shareLink->password && !$shareLink->checkPassword((string) $request->post('password'))) {
             return response()->json(['message' => 'Invalid password'], 403);
         }
 
@@ -167,12 +171,13 @@ class ShareLinkController extends Controller
             $document = Document::findOrFail($shareLink->shareable_id);
 
             // Verificar se o arquivo existe
-            if (!file_exists(storage_path('app/private/' . $document->file_path))) {
+            if (!Storage::disk('private')->exists($document->file_path)) {
                 return response()->json(['error' => 'File not found'], 404);
             }
 
-            // Incrementar contador de downloads
-            $shareLink->increment('downloads_count');
+            if (!$shareLink->reserveDownload()) {
+                return response()->json(['message' => 'Download limit exceeded'], 429);
+            }
 
             // Use AuditService for logging (null user for public download)
             $this->auditService->logDownload(null, $document, [
@@ -180,11 +185,9 @@ class ShareLinkController extends Controller
                 'ip' => $request->ip(),
             ]);
 
-            return response()->download(
-                storage_path('app/private/' . $document->file_path),
-                $document->name,
-                ['Content-Type' => $document->mime_type]
-            );
+            return Storage::disk('private')->download($document->file_path, $document->name, [
+                'Content-Type' => $document->mime_type,
+            ]);
         }
 
         // Download de pasta como ZIP
@@ -201,8 +204,15 @@ class ShareLinkController extends Controller
                     return response()->json(['error' => 'Arquivo ZIP não foi criado'], 500);
                 }
 
-                // Incrementar contador de downloads
-                $shareLink->increment('downloads_count');
+                if (!$shareLink->reserveDownload()) {
+                    if (!unlink($zipPath)) {
+                        \Illuminate\Support\Facades\Log::warning('Unable to remove ZIP after share download limit was reached.', [
+                            'path' => $zipPath,
+                        ]);
+                    }
+
+                    return response()->json(['message' => 'Download limit exceeded'], 429);
+                }
 
                 // Use AuditService for logging (null user for public download)
                 $this->auditService->logDownload(null, $folder, [

@@ -229,7 +229,7 @@ class FolderController extends Controller
             'shareable_type' => 'Folder',
             'shareable_id' => $folder->id,
             'expires_at' => $request->expires_at,
-            'password' => $request->password ? hash('sha256', $request->password) : null,
+            'password' => $request->password,
             'created_by' => $user->id,
         ]);
 

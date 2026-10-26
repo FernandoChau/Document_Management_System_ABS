@@ -54,6 +54,11 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'frontend_origins' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', env('FRONTEND_ALLOWED_ORIGINS', 'http://localhost:5173'))
+    ))),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone

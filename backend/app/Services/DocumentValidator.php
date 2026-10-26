@@ -45,7 +45,7 @@ class DocumentValidator
     /**
      * Maximum file size in bytes (100MB)
      */
-    private const MAX_FILE_SIZE = 100 * 1024 * 1024;
+    private const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
     /**
      * Dangerous MIME types that should be blocked

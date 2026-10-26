@@ -251,20 +251,18 @@ class FileOperationService
     private function streamZip(string $zipPath, string $filename): StreamedResponse
     {
         $response = response()->streamDownload(function () use ($zipPath) {
-            readfile($zipPath);
-            @unlink($zipPath); // Clean up after streaming
+            try {
+                readfile($zipPath);
+            } finally {
+                if (is_file($zipPath) && !unlink($zipPath)) {
+                    \Illuminate\Support\Facades\Log::warning('Unable to remove temporary ZIP after download.', [
+                        'path' => $zipPath,
+                    ]);
+                }
+            }
         }, $filename, [
             'Content-Type' => 'application/zip',
-            'Content-Disposition' => "attachment; filename=\"{{$filename}}\"",
         ]);
-
-        // Add CORS headers for browser downloads
-        $origin = request()->header('Origin');
-        if ($origin) {
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-            $response->headers->set('Access-Control-Allow-Credentials', 'true');
-            $response->headers->set('Access-Control-Expose-Headers', 'Content-Length, Content-Disposition');
-        }
 
         return $response;
     }
@@ -275,19 +273,20 @@ class FileOperationService
     private function streamFile(string $filePath, string $filename, string $mimeType): StreamedResponse
     {
         $response = response()->streamDownload(function () use ($filePath) {
-            echo Storage::disk('private')->get($filePath);
+            $stream = Storage::disk('private')->readStream($filePath);
+
+            if ($stream === false) {
+                throw new \RuntimeException('Unable to open document for streaming.');
+            }
+
+            try {
+                fpassthru($stream);
+            } finally {
+                fclose($stream);
+            }
         }, $filename, [
             'Content-Type' => $mimeType,
-            'Content-Disposition' => "attachment; filename=\"{{$filename}}\"",
         ]);
-
-        // Add CORS headers for browser downloads
-        $origin = request()->header('Origin');
-        if ($origin) {
-            $response->headers->set('Access-Control-Allow-Origin', $origin);
-            $response->headers->set('Access-Control-Allow-Credentials', 'true');
-            $response->headers->set('Access-Control-Expose-Headers', 'Content-Length, Content-Disposition');
-        }
 
         return $response;
     }

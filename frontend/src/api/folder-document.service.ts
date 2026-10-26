@@ -553,9 +553,9 @@ export const getShareLinkDetails = async (
   created_at: string;
   expires_at?: string;
 }> => {
-  const response = await api.get(`/compartilhamentos/${token}`, {
-    params: password ? { password } : undefined,
-  });
+  const response = password
+    ? await api.post(`/compartilhamentos/${token}/aceder`, { password })
+    : await api.get(`/compartilhamentos/${token}`);
   return response.data;
 };
 
@@ -566,12 +566,8 @@ export const downloadViaShareLink = async (
   token: string,
   password?: string,
 ): Promise<Blob> => {
-  const response = await api.get(
-    `/compartilhamentos/${token}/baixar`,
-    {
-      params: password ? { password } : undefined,
-      responseType: "blob",
-    },
-  );
+  const response = password
+    ? await api.post(`/compartilhamentos/${token}/baixar`, { password }, { responseType: "blob" })
+    : await api.get(`/compartilhamentos/${token}/baixar`, { responseType: "blob" });
   return response.data as Blob;
 };

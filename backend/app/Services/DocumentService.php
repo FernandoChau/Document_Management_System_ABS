@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Jobs\ExtractDocumentText;
 use App\Models\Document;
 use App\Models\Folder;
 use App\Models\User;
@@ -9,6 +10,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Throwable;
 
 class DocumentService
 {
@@ -22,75 +24,73 @@ class DocumentService
      */
     public function uploadFile(Folder $folder, UploadedFile $file, User $uploader): Document
     {
-        return DB::transaction(function () use ($folder, $file, $uploader) {
-            $year = now()->year;
-            
-            // 1. Calculate Sequence Number (Atomic Lock needed in high concurrency, using pessimistic lock here)
-            // We lock the folder row or use a separate counter table. 
-            // For simplicity in this tailored solution, we will query with lockForUpdate on the latest document of this folder/year.
-            // Note: In high traffic, a dedicated unique sequence generator usually better, but this suffices for typical DMS.
-            
-            $lastDoc = Document::where('folder_id', $folder->id)
-                ->where('year', $year)
-                ->lockForUpdate()
-                ->orderBy('sequence_number', 'desc')
-                ->first();
-                
-            $sequence = $lastDoc ? $lastDoc->sequence_number + 1 : 1;
-            
-            // 2. Generate Reference Code
-            // Format: folder_ref . YY . SEQ . filename
-            // Example: "dt.t" . "." . "26" . "." . "001" . "." . "file.txt" => "dt.t.26.001.file.txt"
-            
-            // Short year: 2026 -> 26
-            $shortYear = substr($year, -2);
-            $paddedSequence = str_pad($sequence, 3, '0', STR_PAD_LEFT);
-            $cleanFilename = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-            
-            $referenceCode = sprintf(
-                '%s.%s.%s.%s',
-                $folder->reference_code,
-                $shortYear,
-                $paddedSequence,
-                $cleanFilename
-            );
-            
-            // 3. Store File Physically
-            // Storing securely in 'documents' folder within 'private' disk (storage/app/documents)
-            // Using hash name to avoid storage conflicts, but we assume file_path stores valid retrieval path
-            $path = $file->store('documents', 'local'); 
-            
-            // 4. Create Document Record
-            $document = Document::create([
-                'folder_id' => $folder->id,
-                'name' => $file->getClientOriginalName(),
-                'file_path' => $path,
-                'reference_code' => $referenceCode,
-                'mime_type' => $file->getMimeType(),
-                'size' => $file->getSize(),
-                'year' => $year,
-                'sequence_number' => $sequence,
-                'user_id' => $uploader->id,
-            ]);
+        $path = $file->store('documents', 'private');
 
-            // 5. Create explicit document permissions for the uploader.
-            // This makes the uploader the explicit owner of the document,
-            // similar to Linux file ownership.
-            $document->permissions()->create([
-                'user_id' => $uploader->id,
-                'can_view' => true,
-                'can_update_metadata' => true,
-                'can_delete' => true,
-                'can_download' => true,
-                'can_share' => true,
-                'can_manage_permissions' => true,
-            ]);
-            
-            // 6. Trigger Async Extraction (Dispatch Job)
-            // ExtractDocumentTextJob::dispatch($document); // To be implemented
-            
-            return $document;
-        });
+        if (!$path) {
+            throw new \RuntimeException('Unable to store uploaded document.');
+        }
+
+        try {
+            $document = DB::transaction(function () use ($folder, $file, $uploader, $path) {
+                Folder::query()->whereKey($folder->id)->lockForUpdate()->firstOrFail();
+                $year = now()->year;
+
+                $lastDoc = Document::withTrashed()
+                    ->where('folder_id', $folder->id)
+                    ->where('year', $year)
+                    ->lockForUpdate()
+                    ->orderBy('sequence_number', 'desc')
+                    ->first();
+
+                $sequence = $lastDoc ? $lastDoc->sequence_number + 1 : 1;
+
+                $shortYear = substr($year, -2);
+                $paddedSequence = str_pad($sequence, 3, '0', STR_PAD_LEFT);
+                $cleanFilename = Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
+
+                $referenceCode = sprintf(
+                    '%s.%s.%s.%s',
+                    $folder->reference_code,
+                    $shortYear,
+                    $paddedSequence,
+                    $cleanFilename
+                );
+
+                $document = Document::create([
+                    'folder_id' => $folder->id,
+                    'name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'reference_code' => $referenceCode,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'year' => $year,
+                    'sequence_number' => $sequence,
+                    'user_id' => $uploader->id,
+                ]);
+
+                $document->permissions()->create([
+                    'user_id' => $uploader->id,
+                    'can_view' => true,
+                    'can_update_metadata' => true,
+                    'can_delete' => true,
+                    'can_download' => true,
+                    'can_share' => true,
+                    'can_manage_permissions' => true,
+                ]);
+
+                return $document;
+            });
+        } catch (Throwable $exception) {
+            if (Storage::disk('private')->exists($path) && !Storage::disk('private')->delete($path)) {
+                report(new \RuntimeException("Failed to clean up uploaded file after database failure: {$path}"));
+            }
+
+            throw $exception;
+        }
+
+        ExtractDocumentText::dispatch($document);
+
+        return $document;
     }
 
     /**
@@ -127,7 +127,7 @@ class DocumentService
             );
             
             // 3. Store File Physically
-            $path = $file->store('documents', 'local');
+            $path = $file->store('documents', 'private');
             
             // 4. Create Document Record (without folder_id)
             $document = Document::create([

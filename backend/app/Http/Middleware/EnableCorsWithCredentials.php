@@ -22,23 +22,16 @@ class EnableCorsWithCredentials
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Domínios permitidos
-        $allowedOrigins = [
-            'http://localhost:5173',  // Desenvolvimento Vite
-            'http://localhost:5174',  // Desenvolvimento Vite alt
-            'http://localhost:5175',  // Desenvolvimento Vite alt
-            'http://localhost:3000',  // Alternativa
-            'http://localhost:8080',  // Alternativa
-            'https://localhost:5173', // HTTPS local
-            // Em produção: adicionar seus domínios reais
-            // 'https://seu-dominio.com',
-            // 'https://www.seu-dominio.com',
-        ];
-
         $origin = $request->header('Origin');
-        $isAllowedOrigin = $origin && in_array($origin, $allowedOrigins);
+        $allowedOrigins = config('app.frontend_origins', []);
+        $isAllowedOrigin = $origin && in_array($origin, $allowedOrigins, true);
+        $isPreflight = $request->isMethod('OPTIONS');
+        $isUnsafeMethod = !in_array($request->method(), ['GET', 'HEAD', 'OPTIONS'], true);
 
-        // Headers CORS que serão retornados
+        if ($origin && !$isAllowedOrigin && ($isPreflight || $isUnsafeMethod)) {
+            return response()->json(['message' => 'Origin not allowed'], 403);
+        }
+
         $corsHeaders = [];
 
         if ($isAllowedOrigin) {
@@ -46,28 +39,24 @@ class EnableCorsWithCredentials
                 'Access-Control-Allow-Origin' => $origin,
                 'Access-Control-Allow-Methods' => 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD',
                 'Access-Control-Allow-Headers' => 'Accept, Authorization, Content-Type, X-CSRF-Token, X-Requested-With, X-Request-ID',
-                'Access-Control-Expose-Headers' => 'Authorization, X-Total-Count, X-Page-Number, Content-Length',
+                'Access-Control-Expose-Headers' => 'Authorization, X-Total-Count, X-Page-Number, Content-Length, Content-Disposition',
                 'Access-Control-Allow-Credentials' => 'true',
                 'Access-Control-Max-Age' => '3600',
             ];
         }
 
-        // Se a requisição é uma pré-verificação OPTIONS, responder imediatamente
-        if ($request->isMethod('OPTIONS')) {
-            return response('', 200, $corsHeaders);
+        if ($isPreflight) {
+            return response('', 204, $corsHeaders);
         }
 
-        // Processar a requisição normal
         $response = $next($request);
 
-        // Adicionar headers CORS à resposta
-        // Usar headers->set() para StreamedResponse, header() para Response normal
         foreach ($corsHeaders as $header => $value) {
-            if (method_exists($response, 'header')) {
-                $response->header($header, $value);
-            } else {
-                $response->headers->set($header, $value);
-            }
+            $response->headers->set($header, $value);
+        }
+
+        if ($origin) {
+            $response->headers->set('Vary', 'Origin', false);
         }
 
         return $response;

@@ -3,26 +3,37 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\DocumentContent;
-use App\Models\Document;
+use App\Exceptions\PermissionDeniedException;
 use App\Services\AuditLogger;
+use App\Services\PermissionValidator;
+use App\Models\Document;
+use App\Models\DocumentContent;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class DocumentContentController extends Controller
 {
+    public function __construct(
+        private PermissionValidator $permissionValidator,
+    ) {
+    }
+
     /**
      * Obter conteúdo extraído de um documento
      */
-    public function show(Document $document)
+    public function show(Request $request, Document $document)
     {
-        // dd($document);
+        if (!$this->canView($request, $document)) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
         $content = $document->content;
 
         if (!$content) {
             return response()->json(['message' => 'No extracted content found'], 404);
         }
 
-        AuditLogger::log(auth()->user(), 'VIEW', $content);
+        AuditLogger::log($request->user(), 'VIEW', $content);
 
         return response()->json($content);
     }
@@ -32,6 +43,10 @@ class DocumentContentController extends Controller
      */
     public function update(Request $request, Document $document)
     {
+        if (!$this->canUpdate($request, $document)) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
         $request->validate([
             'extracted_text' => 'required|string',
             'extraction_status' => 'nullable|in:pending,processing,completed,failed',
@@ -51,8 +66,12 @@ class DocumentContentController extends Controller
     /**
      * Deletar conteúdo extraído
      */
-    public function destroy(Document $document)
+    public function destroy(Request $request, Document $document)
     {
+        if (!$this->canUpdate($request, $document)) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
         if ($document->content) {
             $document->content->delete();
             AuditLogger::log(auth()->user(), 'SOFT_DELETE', $document->content);
@@ -71,21 +90,54 @@ class DocumentContentController extends Controller
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
-        $query = $request->input('q');
-        $perPage = $request->input('per_page', 15);
+        $searchTerm = $request->input('q');
+        $perPage = (int) $request->input('per_page', 15);
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $offset = ($page - 1) * $perPage;
+        $visibleContents = [];
+        $visibleCount = 0;
 
-        $results = DocumentContent::whereRaw("extracted_text LIKE ?", ["%{$query}%"])
-            ->with('document')
-            ->paginate($perPage);
+        $contents = DocumentContent::query()
+            ->whereRaw('extracted_text LIKE ?', ["%{$searchTerm}%"])
+            ->whereHas('document')
+            ->with('document.folder')
+            ->lazyById(100);
 
-        return response()->json($results);
+        foreach ($contents as $content) {
+            $document = $content->document;
+
+            if (!$document || !$this->canView($request, $document)) {
+                continue;
+            }
+
+            if ($visibleCount >= $offset && count($visibleContents) < $perPage) {
+                $visibleContents[] = $content;
+            }
+
+            $visibleCount++;
+        }
+
+        return response()->json(new LengthAwarePaginator(
+            $visibleContents,
+            $visibleCount,
+            $perPage,
+            $page,
+            [
+                'path' => LengthAwarePaginator::resolveCurrentPath(),
+                'query' => $request->query(),
+            ],
+        ));
     }
 
     /**
      * Obter status de extração de um documento
      */
-    public function status(Document $document)
+    public function status(Request $request, Document $document)
     {
+        if (!$this->canView($request, $document)) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
         $content = $document->content;
 
         if (!$content) {
@@ -97,5 +149,27 @@ class DocumentContentController extends Controller
             'extracted_at' => $content->created_at,
             'has_text' => !empty($content->extracted_text),
         ]);
+    }
+
+    private function canView(Request $request, Document $document): bool
+    {
+        try {
+            $this->permissionValidator->validateDocumentAction($request->user(), $document, 'view');
+
+            return true;
+        } catch (PermissionDeniedException) {
+            return false;
+        }
+    }
+
+    private function canUpdate(Request $request, Document $document): bool
+    {
+        try {
+            $this->permissionValidator->validateDocumentAction($request->user(), $document, 'update');
+
+            return true;
+        } catch (PermissionDeniedException) {
+            return false;
+        }
     }
 }

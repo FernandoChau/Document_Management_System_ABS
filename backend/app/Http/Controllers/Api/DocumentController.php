@@ -220,7 +220,7 @@ class DocumentController extends Controller
             'shareable_type' => 'Document',
             'shareable_id' => $document->id,
             'expires_at' => $request->expires_at,
-            'password' => $request->password ? hash('sha256', $request->password) : null,
+            'password' => $request->password,
             'created_by' => $user->id,
         ]);
 

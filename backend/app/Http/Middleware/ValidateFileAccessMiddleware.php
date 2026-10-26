@@ -41,10 +41,7 @@ class ValidateFileAccessMiddleware
                 return response()->json(['error' => 'Password required for this share link'], 403);
             }
 
-            if ($shareLink->password && !hash_equals(
-                $shareLink->password,
-                hash('sha256', $request->query('password'))
-            )) {
+            if ($shareLink->password && !$shareLink->checkPassword((string) $request->query('password'))) {
                 return response()->json(['error' => 'Invalid password'], 403);
             }
 

@@ -8,6 +8,11 @@ import UploadPhotosModal from "./UploadPhotosModal";
 import ImageLightbox from "./ImageLightbox";
 import { Modal } from "@/components/ui/modal";
 
+type PhotoStatus = {
+  id: string;
+  status: string;
+};
+
 export default function AlbumDetail() {
   const { id } = useParams<{ id: string }>();
 
@@ -53,6 +58,30 @@ export default function AlbumDetail() {
       fetchPhotos(nextCursor);
     }
   }, [inView, nextCursor, fetchPhotos]);
+
+  useEffect(() => {
+    if (!id || !photos.some((photo) => photo.status === "processing")) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      getAlbumPhotos(id)
+        .then((response) => {
+          const refreshedPhotos = new Map(
+            response.data.map((photo: PhotoStatus) => [photo.id, photo]),
+          );
+
+          setPhotos((currentPhotos) =>
+            currentPhotos.map((photo) => refreshedPhotos.get(photo.id) ?? photo),
+          );
+        })
+        .catch((error) => {
+          console.error("Failed to refresh photo processing status", error);
+        });
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, [id, photos]);
 
   const handleUploadSuccess = useCallback((newPhoto: any) => {
     setPhotos(prev => [newPhoto, ...prev]);

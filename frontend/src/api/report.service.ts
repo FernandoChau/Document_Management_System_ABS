@@ -89,9 +89,9 @@ export const getWeeklyReports = async (
 };
 
 /**
- * Exportar CSV do índice semanal de documentos
+ * Exportar PDF do índice semanal de documentos
  */
-export const exportWeeklyReportCsv = async (
+export const exportWeeklyReportPdf = async (
   ano: number,
   semana: number,
 ): Promise<Blob> => {

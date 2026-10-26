@@ -69,7 +69,8 @@ class DocumentPermissionController extends Controller
         }
 
         // Check if already exists
-        $existing = DocumentPermission::where('document_id', $document->id)
+        $existing = DocumentPermission::withTrashed()
+            ->where('document_id', $document->id)
             ->where(function ($q) use ($request) {
                 if ($request->user_id) {
                     $q->where('user_id', $request->user_id);
@@ -80,6 +81,9 @@ class DocumentPermissionController extends Controller
             ->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
             $existing->update($request->only([
                 'can_view',
                 'can_update_metadata',
@@ -87,7 +91,7 @@ class DocumentPermissionController extends Controller
                 'can_download',
                 'can_share',
                 'can_manage_permissions'
-            ]));
+            ]) + ['is_inherited' => false, 'is_revoked' => false]);
             AuditLogger::log($user, 'UPDATE_METADATA', $existing);
             return response()->json($existing);
         }
@@ -102,6 +106,8 @@ class DocumentPermissionController extends Controller
             'can_download' => $request->can_download,
             'can_share' => $request->can_share,
             'can_manage_permissions' => $request->can_manage_permissions ?? false,
+            'is_inherited' => false,
+            'is_revoked' => false,
         ]);
 
         AuditLogger::log($user, 'CREATE', $permission, [
@@ -145,7 +151,7 @@ class DocumentPermissionController extends Controller
             'can_download',
             'can_share',
             'can_manage_permissions'
-        ]));
+        ]) + ['is_inherited' => false, 'is_revoked' => false]);
 
         AuditLogger::log($user, 'UPDATE_METADATA', $permission);
 
@@ -168,8 +174,17 @@ class DocumentPermissionController extends Controller
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
-        $permission->delete();
-        AuditLogger::log($user, 'SOFT_DELETE', $permission);
+        $permission->update([
+            'can_view' => false,
+            'can_update_metadata' => false,
+            'can_delete' => false,
+            'can_download' => false,
+            'can_share' => false,
+            'can_manage_permissions' => false,
+            'is_inherited' => false,
+            'is_revoked' => true,
+        ]);
+        AuditLogger::log($user, 'REVOKE', $permission);
 
         return response()->noContent();
     }

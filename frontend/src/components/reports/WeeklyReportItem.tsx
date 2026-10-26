@@ -1,13 +1,11 @@
 import React, { useState } from "react";
-import { ReportDocument, ReportWeek, exportWeeklyReportCsv } from "@/api/report.service";
+import { ReportDocument, ReportWeek, exportWeeklyReportPdf } from "@/api/report.service";
 import { DocumentRow } from "./DocumentRow";
 import {
   ArrowDownTrayIcon,
   CalendarIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  DocumentTextIcon,
-  TableCellsIcon,
 } from "@heroicons/react/24/outline";
 
 interface WeeklyReportItemProps {
@@ -30,23 +28,23 @@ export const WeeklyReportItem: React.FC<WeeklyReportItemProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  const handleExportCsv = async (e: React.MouseEvent) => {
+  const handleExportPdf = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isExporting) return;
     setIsExporting(true);
     try {
-      const blob = await exportWeeklyReportCsv(year, week.week_number);
+      const blob = await exportWeeklyReportPdf(year, week.week_number);
       const url = window.URL.createObjectURL(blob);
       const a = window.document.createElement("a");
       a.href = url;
-      a.download = `indice_semanal_W${week.week_number}_${year}.csv`;
+      a.download = `indice_semanal_W${week.week_number}_${year}.pdf`;
       window.document.body.appendChild(a);
       a.click();
       window.document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error("Erro ao exportar CSV:", err);
-      alert("Não foi possível exportar o índice semanal em CSV.");
+      console.error("Erro ao exportar PDF:", err);
+      alert("Não foi possível exportar o índice semanal em PDF.");
     } finally {
       setIsExporting(false);
     }
@@ -83,17 +81,17 @@ export const WeeklyReportItem: React.FC<WeeklyReportItemProps> = ({
 
         <div className="flex items-center gap-2 self-end sm:self-auto" onClick={(e) => e.stopPropagation()}>
           <button
-            onClick={handleExportCsv}
+            onClick={handleExportPdf}
             disabled={isExporting}
             className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 disabled:opacity-50 transition-all duration-150"
-            title="Descarregar índice semanal em CSV formatado"
+            title="Descarregar índice semanal em PDF"
           >
             {isExporting ? (
               <div className="size-3.5 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
             ) : (
               <ArrowDownTrayIcon className="size-3.5 text-gray-500 dark:text-gray-400" />
             )}
-            <span>Exportar Índice CSV</span>
+            <span>Exportar Índice PDF</span>
           </button>
 
           <button

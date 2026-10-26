@@ -9,16 +9,21 @@ use App\Models\User;
 use App\Models\Group;
 use App\Services\AuditLogger;
 use App\Services\AuthorizationService;
+use App\Services\FolderPermissionCascadeService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class FolderPermissionController extends Controller
 {
     protected $authorizationService;
+    protected FolderPermissionCascadeService $permissionCascadeService;
 
-    public function __construct(AuthorizationService $authorizationService)
-    {
+    public function __construct(
+        AuthorizationService $authorizationService,
+        FolderPermissionCascadeService $permissionCascadeService
+    ) {
         $this->authorizationService = $authorizationService;
+        $this->permissionCascadeService = $permissionCascadeService;
     }
 
     /**
@@ -70,7 +75,8 @@ class FolderPermissionController extends Controller
         }
 
         // Check if already exists
-        $existing = FolderPermission::where('folder_id', $folder->id)
+        $existing = FolderPermission::withTrashed()
+            ->where('folder_id', $folder->id)
             ->where(function ($q) use ($request) {
                 if ($request->user_id) {
                     $q->where('user_id', $request->user_id);
@@ -81,6 +87,9 @@ class FolderPermissionController extends Controller
             ->first();
 
         if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore();
+            }
             $existing->update($request->only([
                 'can_view',
                 'can_update_metadata',
@@ -90,6 +99,7 @@ class FolderPermissionController extends Controller
                 'can_download',
                 'can_manage_permissions'
             ]));
+            $this->permissionCascadeService->synchronize($existing);
             AuditLogger::log($user, 'UPDATE_METADATA', $existing);
             return response()->json($existing);
         }
@@ -106,6 +116,7 @@ class FolderPermissionController extends Controller
             'can_download' => $request->can_download,
             'can_manage_permissions' => $request->can_manage_permissions ?? false,
         ]);
+        $this->permissionCascadeService->synchronize($permission);
 
         AuditLogger::log($user, 'CREATE', $permission, [
             'granted_to_user' => $request->user_id,
@@ -152,6 +163,7 @@ class FolderPermissionController extends Controller
             'can_manage_permissions'
         ]));
 
+        $this->permissionCascadeService->synchronize($permission);
         AuditLogger::log($user, 'UPDATE_METADATA', $permission);
 
         return response()->json($permission);
@@ -173,6 +185,7 @@ class FolderPermissionController extends Controller
             return response()->json(['error' => 'Forbidden'], 403);
         }
 
+        $this->permissionCascadeService->removeInheritedPermissions($permission);
         $permission->delete();
         AuditLogger::log($user, 'SOFT_DELETE', $permission);
 

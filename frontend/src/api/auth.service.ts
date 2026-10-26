@@ -1,4 +1,5 @@
 import api from "./axios";
+import type { UserRole } from "./user.service";
 
 export type RegisterDTO = {
   name: string;
@@ -27,7 +28,7 @@ export type AuthUser = {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "user";
+  role: UserRole;
   is_active: boolean;
   has_authenticated: boolean;
   phone?: string;
@@ -150,4 +151,3 @@ export function disableTwoFactor() {
 export function regenerateTwoFactorRecoveryCodes() {
   return api.post<TwoFactorRegenerateResponse>("/autenticacao-dois-fatores/regenerar-codigos");
 }
-

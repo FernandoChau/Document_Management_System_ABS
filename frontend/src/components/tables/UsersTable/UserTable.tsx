@@ -122,7 +122,7 @@ function UserTable() {
       name,
       email,
       is_active: isActive,
-      role: role as "admin" | "user",
+      role: role as User["role"],
       phone,
       profession,
     };
@@ -398,6 +398,8 @@ function UserTable() {
                         <CheckBadgeIcon className="size-4.5" />{" "}
                         Administrador{" "}
                       </span>
+                    ) : user.role === "image_manager" ? (
+                      "Gestor de Imagens"
                     ) : (
                       "👤 Usuário"
                     )}

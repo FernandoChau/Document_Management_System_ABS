@@ -50,7 +50,13 @@ class PermissionResolver
         }
 
         if ($document->user_id === $user->id) {
-            return $this->getAllPermissions();
+            $isRevoked = $document->permissions()
+                ->where('user_id', $user->id)
+                ->whereNull('group_id')
+                ->where('is_revoked', true)
+                ->exists();
+
+            return $isRevoked ? $this->getNoPermissions() : $this->getAllPermissions();
         }
 
         $permissions = $this->mergePermissions(
@@ -234,6 +240,10 @@ class PermissionResolver
             ->first();
 
         if ($userPerm) {
+            if ($userPerm->is_revoked) {
+                return $this->getNoPermissions();
+            }
+
             return [
                 'can_view' => $userPerm->can_view,
                 'can_update_metadata' => $userPerm->can_update_metadata,
@@ -241,6 +251,22 @@ class PermissionResolver
                 'can_download' => $userPerm->can_download,
                 'can_share' => $userPerm->can_share,
                 'can_manage_permissions' => $userPerm->can_manage_permissions,
+            ];
+        }
+
+        $folderPermission = $document->folder?->permissions()
+            ->where('user_id', $user->id)
+            ->whereNull('group_id')
+            ->first();
+
+        if ($folderPermission) {
+            return [
+                'can_view' => $folderPermission->can_view,
+                'can_update_metadata' => $folderPermission->can_update_metadata,
+                'can_delete' => $folderPermission->can_delete,
+                'can_download' => $folderPermission->can_download,
+                'can_share' => $folderPermission->can_share,
+                'can_manage_permissions' => $folderPermission->can_manage_permissions,
             ];
         }
 

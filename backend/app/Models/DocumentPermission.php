@@ -21,6 +21,8 @@ class DocumentPermission extends Model
         'can_download',
         'can_share',
         'can_manage_permissions',
+        'is_inherited',
+        'is_revoked',
     ];
 
     protected $casts = [
@@ -30,6 +32,8 @@ class DocumentPermission extends Model
         'can_download' => 'boolean',
         'can_share' => 'boolean',
         'can_manage_permissions' => 'boolean',
+        'is_inherited' => 'boolean',
+        'is_revoked' => 'boolean',
     ];
 
     protected $keyType = 'string';

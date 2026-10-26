@@ -221,6 +221,7 @@ function CreateUserModal({ isOpen, onClose, onSubmit }: CreateUserModalProps) {
                   options={[
                     { value: "user", label: "Utilizador" },
                     { value: "admin", label: "Administrador" },
+                    { value: "image_manager", label: "Gestor de Imagens" },
                   ]}
                   defaultValue={role}
                   placeholder="Selecione a role"

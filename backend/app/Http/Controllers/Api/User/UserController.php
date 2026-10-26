@@ -48,7 +48,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|email:rfc,dns|ends_with:@abspro.co.mz|max:255|unique:users',
-            'role' => 'nullable|string|in:admin,user',
+            'role' => 'nullable|string|in:admin,user,image_manager',
             'phone' => 'nullable|digits:9',
             'profession' => 'nullable|string|max:100',
             'is_active' => 'nullable|boolean',
@@ -112,7 +112,7 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|email:rfc,dns|ends_with:@abspro.co.mz|max:255|unique:users,email,' . $user->id,
-            'role' => 'nullable|string|in:admin,user',
+            'role' => 'nullable|string|in:admin,user,image_manager',
             'phone' => 'nullable|digits:9',
             'profession' => 'nullable|string|max:100',
         ], [

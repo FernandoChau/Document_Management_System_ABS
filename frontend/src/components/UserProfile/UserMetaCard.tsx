@@ -12,7 +12,13 @@ export default function UserMetaCard() {
 
   const name = user?.name || "User";
   const email = user?.email || "";
-  const profession = user?.profession || (user?.role === "admin" ? "Administrador" : "Utilizador");
+  const profession = user?.profession || (
+    user?.role === "admin"
+      ? "Administrador"
+      : user?.role === "image_manager"
+        ? "Gestor de Imagens"
+        : "Utilizador"
+  );
 
   return (
     <>

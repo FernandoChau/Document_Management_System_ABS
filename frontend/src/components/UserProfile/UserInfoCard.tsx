@@ -197,7 +197,13 @@ export default function UserInfoCard() {
                 Profissão
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
-                {user?.profession || (user?.role === "admin" ? "Administrador" : "Utilizador")}
+                {user?.profession || (
+                  user?.role === "admin"
+                    ? "Administrador"
+                    : user?.role === "image_manager"
+                      ? "Gestor de Imagens"
+                      : "Utilizador"
+                )}
               </p>
             </div>
           </div>
@@ -286,7 +292,13 @@ export default function UserInfoCard() {
                     <Label>Profissão</Label>
                     <Input
                       type="text"
-                      value={user?.profession || (user?.role === "admin" ? "Administrador" : "Utilizador")}
+                      value={user?.profession || (
+                        user?.role === "admin"
+                          ? "Administrador"
+                          : user?.role === "image_manager"
+                            ? "Gestor de Imagens"
+                            : "Utilizador"
+                      )}
                       disabled
                       hint="Apenas administradores podem alterar a profissão."
                     />

@@ -1,11 +1,13 @@
 import api from "./axios";
 
+export type UserRole = "admin" | "user" | "image_manager";
+
 // ✅ Tipo para dados do usuário retornados do backend
 export type User = {
   id?: string;
   name: string;
   email: string;
-  role: "admin" | "user";
+  role: UserRole;
   profession?: string;
   phone?: string;
   is_active: boolean;
@@ -17,7 +19,7 @@ export type User = {
 export type AdminCreateUserDTO = {
   name: string;
   email: string;
-  role?: "admin" | "user";
+  role?: UserRole;
   phone?: string;
   profession?: string;
   is_active: boolean;

@@ -16,6 +16,7 @@ use App\Services\PermissionValidator;
 use App\Services\StructureValidator;
 use App\Services\DocumentValidator;
 use App\Services\FolderValidator;
+use App\Services\FolderPermissionCascadeService;
 use App\Exceptions\PermissionDeniedException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -32,6 +33,7 @@ class DocumentController extends Controller
     protected $structureValidator;
     protected $documentValidator;
     protected $folderValidator;
+    protected FolderPermissionCascadeService $permissionCascadeService;
 
     public function __construct(
         DocumentService $documentService,
@@ -41,7 +43,8 @@ class DocumentController extends Controller
         PermissionValidator $permissionValidator,
         StructureValidator $structureValidator,
         DocumentValidator $documentValidator,
-        FolderValidator $folderValidator
+        FolderValidator $folderValidator,
+        FolderPermissionCascadeService $permissionCascadeService
     ) {
         $this->documentService = $documentService;
         $this->fileOperationService = $fileOperationService;
@@ -51,6 +54,7 @@ class DocumentController extends Controller
         $this->structureValidator = $structureValidator;
         $this->documentValidator = $documentValidator;
         $this->folderValidator = $folderValidator;
+        $this->permissionCascadeService = $permissionCascadeService;
     }
 
     public function store(Request $request, Folder $folder)
@@ -105,6 +109,7 @@ class DocumentController extends Controller
                 $this->documentValidator->validateFileSize($file->getSize());
 
                 $doc = $this->documentService->uploadFile($folder, $file, $user);
+                $this->permissionCascadeService->synchronizeDocument($doc);
                 $this->auditService->logUpload($user, $doc);
                 $documents[] = $doc;
             } catch (\InvalidArgumentException $e) {
@@ -292,8 +297,17 @@ class DocumentController extends Controller
                                         $innerQuery->orWhereIn('group_id', $userGroupIds);
                                     }
                                 });
+                        })
+                        ->orWhereHas('folder.permissions', function ($permissionQuery) use ($user) {
+                            $permissionQuery->where('user_id', $user->id)
+                                ->where('can_view', true);
                         });
                 });
+
+            $query->whereDoesntHave('permissions', function ($permissionQuery) use ($user) {
+                $permissionQuery->where('user_id', $user->id)
+                    ->where('is_revoked', true);
+            });
         } else {
             // If no folder specified, return documents user has access to
             // This requires checking permissions on all documents

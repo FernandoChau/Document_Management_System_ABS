@@ -112,12 +112,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {isAdmin && adminData?.department_chart && adminData.department_chart.length > 0 && (
-          <div className="col-span-12">
-            <SystemUsageChart data={adminData.department_chart} />
-          </div>
-        )}
-
         <div className="col-span-12">
           <RecentActivities 
             title={isAdmin ? "Últimos Uploads" : "Meus Últimos Uploads"}

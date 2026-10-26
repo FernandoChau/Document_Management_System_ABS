@@ -23,6 +23,8 @@ export interface Permission {
   can_share: boolean;
   can_upload?: boolean;
   can_manage_permissions: boolean;
+  is_inherited?: boolean;
+  is_revoked?: boolean;
   created_at?: string;
   updated_at?: string;
   user?: { id: string; name: string; email?: string };

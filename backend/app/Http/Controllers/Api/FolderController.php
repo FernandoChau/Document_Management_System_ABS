@@ -76,7 +76,10 @@ class FolderController extends Controller
                 $child->permissions = $this->authorizationService->resolveFolderPermissions($user, $child);
             }
 
-            // Attach permissions to documents
+            $folder->setRelation('documents', $folder->documents
+                ->filter(fn ($doc) => $this->authorizationService->canViewDocument($user, $doc))
+                ->values());
+
             foreach ($folder->documents as $doc) {
                 $doc->permissions = $this->authorizationService->resolveDocumentPermissions($user, $doc);
             }
@@ -287,7 +290,10 @@ class FolderController extends Controller
             $child->permissions = $this->authorizationService->resolveFolderPermissions($user, $child);
         }
 
-        // Attach permissions to documents
+        $folder->setRelation('documents', $folder->documents
+            ->filter(fn ($doc) => $this->authorizationService->canViewDocument($user, $doc))
+            ->values());
+
         foreach ($folder->documents as $doc) {
             $doc->permissions = $this->authorizationService->resolveDocumentPermissions($user, $doc);
         }

@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Document;
 use App\Models\Folder;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
 {
@@ -75,6 +75,11 @@ class ReportController extends Controller
                                 }
                             });
                     });
+            });
+
+            $query->whereDoesntHave('permissions', function ($permissionQuery) use ($user) {
+                $permissionQuery->where('user_id', $user->id)
+                    ->where('is_revoked', true);
             });
         }
 
@@ -256,9 +261,9 @@ class ReportController extends Controller
     }
 
     /**
-     * Exporta o índice semanal de documentos em formato CSV para conferência e auditoria.
+     * Exporta o índice semanal de documentos em formato PDF para conferência e auditoria.
      */
-    public function exportWeek(Request $request): StreamedResponse
+    public function exportWeek(Request $request)
     {
         $request->validate([
             'ano' => 'required|integer',
@@ -267,12 +272,10 @@ class ReportController extends Controller
 
         $ano = (int) $request->ano;
         $semana = (int) $request->semana;
-
         $user = $request->user();
 
         $query = Document::query()
             ->with(['folder', 'uploader'])
-            ->whereNull('deleted_at')
             ->whereYear('created_at', $ano);
 
         if (!$user->isAdmin()) {
@@ -287,63 +290,40 @@ class ReportController extends Controller
                                     $inner->orWhereIn('group_id', $userGroupIds);
                                 }
                             });
+                    })
+                    ->orWhereHas('folder.permissions', function ($fpq) use ($user) {
+                        $fpq->where('user_id', $user->id)
+                            ->where('can_view', true);
                     });
+            });
+            $query->whereDoesntHave('permissions', function ($pq) use ($user) {
+                $pq->where('user_id', $user->id)
+                    ->where('is_revoked', true);
             });
         }
 
-        $allDocs = $query->orderBy('created_at', 'asc')->get();
-
-        // Filtrar documentos que pertencem à semana solicitada
-        $weekDocs = $allDocs->filter(function ($doc) use ($semana) {
-            return Carbon::parse($doc->created_at)->isoWeek === $semana;
+        $weekDocs = $query->orderBy('created_at', 'asc')->get()
+            ->filter(fn (Document $document) => Carbon::parse($document->created_at)->isoWeek === $semana)
+            ->values();
+        $weekStart = $weekDocs->isEmpty()
+            ? Carbon::now()->setISODate($ano, $semana)->startOfWeek()
+            : Carbon::parse($weekDocs->first()->created_at)->startOfWeek();
+        $weekEnd = $weekStart->copy()->endOfWeek();
+        $weekDocs->each(function (Document $document) {
+            $document->setAttribute('size_formatted', $this->formatBytes((int) $document->size));
         });
+        $filename = "indice_semanal_semana_{$semana}_{$ano}.pdf";
 
-        $filename = "indice_semanal_semana_{$semana}_{$ano}.csv";
-
-        $headers = [
-            'Content-Type' => 'text/csv; charset=utf-8',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-            'Pragma' => 'no-cache',
-            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
-            'Expires' => '0',
-        ];
-
-        return response()->stream(function () use ($weekDocs) {
-            $handle = fopen('php://output', 'w');
-            // Adicionar BOM UTF-8 para garantir abertura correta no Excel
-            fputs($handle, "\xEF\xBB\xBF");
-
-            // Cabeçalhos das colunas
-            fputcsv($handle, [
-                'Código',
-                'Nome do Documento',
-                'Pasta',
-                'Submetido Por',
-                'Data de Submissão',
-                'Hora de Submissão',
-                'Tamanho',
-                'Formato'
-            ], ';');
-
-            foreach ($weekDocs as $doc) {
-                $createdAt = Carbon::parse($doc->created_at);
-                $folderRef = $doc->folder?->reference_code ?: ($doc->folder?->name ? strtoupper(substr($doc->folder->name, 0, 2)) : 'DC');
-                $docCode = !empty($doc->reference_code) ? $doc->reference_code : ($folderRef . '.' . $doc->name);
-
-                fputcsv($handle, [
-                    $docCode,
-                    $doc->name,
-                    $doc->folder?->name ?? 'Sem Pasta',
-                    $doc->uploader?->name ?? 'Desconhecido',
-                    $createdAt->format('d/m/Y'),
-                    $createdAt->format('H:i:s'),
-                    $this->formatBytes((int) $doc->size),
-                    $doc->mime_type ?? 'N/A'
-                ], ';');
-            }
-
-            fclose($handle);
-        }, 200, $headers);
+        return Pdf::loadView('reports.weekly', [
+            'documents' => $weekDocs,
+            'year' => $ano,
+            'week' => $semana,
+            'dateRange' => $weekStart->format('d/m/Y') . ' - ' . $weekEnd->format('d/m/Y'),
+            'totalSize' => $this->formatBytes((int) $weekDocs->sum('size')),
+        ])
+            ->setPaper('a4', 'landscape')
+            ->setOptions(['defaultFont' => 'DejaVu Sans'])
+            ->download($filename);
     }
 
     /**

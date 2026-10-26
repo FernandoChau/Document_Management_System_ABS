@@ -101,6 +101,7 @@ function EditUserModal({ isOpen, onClose, onSubmit }: EditUserModalProps) {
                   options={[
                     { value: "user", label: "Utilizador" },
                     { value: "admin", label: "Administrador" },
+                    { value: "image_manager", label: "Gestor de Imagens" },
                   ]}
                   defaultValue={role}
                   placeholder="Selecione o role"

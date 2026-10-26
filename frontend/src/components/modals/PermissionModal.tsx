@@ -170,6 +170,7 @@ function PermissionModal({
           </h4>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Gira quem tem acesso e com que nível de permissões.
+            {itemType === "document" && " Revogar aqui bloqueia o acesso a este ficheiro, mesmo que a pasta tenha uma permissão ativa."}
           </p>
         </div>
 
@@ -273,7 +274,9 @@ function PermissionModal({
                               </span>
                             </div>
                             <p className="text-xs text-gray-500 dark:text-gray-400 break-words line-clamp-2 leading-tight" title={enabledPerms.join(", ")}>
-                              {enabledPerms.join(", ")}
+                              {perm.is_revoked
+                                ? "Acesso revogado neste ficheiro"
+                                : enabledPerms.join(", ")}
                             </p>
                           </div>
                           <button
